@@ -181,10 +181,10 @@ export const PARTS = {
     links: [['head', 'bolted to inlet side'], ['intakeFlap', 'fed through'], ['egrValve', 'receives exhaust gas from']],
   },
   intakeFlap: {
-    name: 'Intake manifold flap', short: 'Intake flap', sys: 'air', code: 'V157', label: 'always',
-    desc: 'Lower half of the valve unit under the intake manifold. An electric motor closes a flap in the intake path when the engine is switched off, cutting the air so the engine stops without shudder. It also helps build the pressure difference that draws recirculated exhaust gas in. The charge air hose from the intercooler plugs into its mouth.',
-    specs: [['Actuator', 'Intake manifold flap motor V157'], ['Controlled by', 'Engine control unit J248']],
-    links: [['intakeManifold', 'upstream of'], ['chargePipe', 'fed by'], ['egrValve', 'next to']],
+    name: 'Anti-shudder valve (intake manifold flap)', short: 'Anti-shudder valve', sys: 'air', code: 'V157', label: 'always',
+    desc: 'Electric throttle body, the first thing the charge air meets on the engine: an aluminium ring with a brass flap on a spindle, and a black plastic housing on its side for the positioning motor and gears with a five-pin connector. When the engine is switched off the flap closes and cuts off the air, so the high-compression engine stops smoothly instead of shuddering; while running it can also throttle the intake slightly to raise the EGR rate. It is bolted to the EGR valve with three bolts and an O-ring, and the charge air hose plugs onto its mouth with a retaining clip.',
+    specs: [['ETKA', '131-080, throttle valve control element'], ['Actuation', 'Electric positioning motor V157'], ['To the EGR valve', 'O-ring 55 × 2.5, 3 bolts M6 × 20'], ['Hose joint', 'Plug-in coupling, retaining clip SCA52'], ['At switch-off', 'Flap closes']],
+    links: [['egrValve', 'bolted to'], ['chargePipe', 'air from'], ['intakeManifold', 'air into, through the EGR valve'], ['g31', 'pressure measured upstream by']],
   },
   chargePipe: {
     name: 'Charge air pipe', sys: 'air',
@@ -219,10 +219,10 @@ export const PARTS = {
     links: [['egrCooler', 'from'], ['egrValve', 'to']],
   },
   egrValve: {
-    name: 'EGR valve', sys: 'exh', label: 'always',
-    desc: 'Upper half of the valve unit bolted under the intake manifold. A mechanical valve, opened by vacuum from exhaust gas recirculation valve N18, meters exhaust gas into the intake air. The low-oxygen gas lowers peak combustion temperature and pressure and so reduces nitrogen oxides. The amount follows a map using engine speed, injection quantity, air mass, intake air temperature and air pressure.',
-    specs: [['Actuation', 'Vacuum via N18'], ['Control', 'Map in control unit J248']],
-    links: [['egrPipe', 'gas from'], ['intakeManifold', 'gas into'], ['valveBlock', 'vacuum switched by N18 in'], ['intakeFlap', 'one unit with']],
+    name: 'EGR valve', sys: 'exh', code: 'vacuum operated', label: 'always',
+    desc: 'A short aluminium tube that all the intake air passes through, bolted between the anti-shudder valve and the intake manifold by a triangular three-bolt flange. A polished vacuum capsule stands out of its side: when solenoid valve N18 applies vacuum, the diaphragm pulls a poppet valve across the bore off its seat on the opposite side, and exhaust gas from the EGR cooler flows into the intake air. With no vacuum a spring holds it shut. It is easy to tell from the anti-shudder valve next to it: bare metal with a shiny round capsule, no electrical connector.',
+    specs: [['Part', '038 131 501 AN (BKC / BKD, from a parts listing)'], ['Actuation', 'Vacuum capsule, controlled by N18'], ['To the manifold', 'O-ring 62 × 3'], ['Exhaust gas port', 'Two-bolt flange, seal 32 mm (ETKA 131-080)'], ['Regulated with', 'Air mass meter G70']],
+    links: [['intakeManifold', 'bolted under'], ['intakeFlap', 'bolted to'], ['egrPipe', 'exhaust gas from'], ['valveBlock', 'vacuum metered by N18 in']],
   },
 
   vacReservoir: {
@@ -688,7 +688,7 @@ const MORE_LINKS = {
   glowPlugs: [['loom', 'supplied through']],
   injectors: [['loom', 'triggered through']],
   intakeFlap: [['loom', 'driven through']],
-  valveCover: [['intakePipe', 'breather gases to']],
+  valveCover: [['intakePipe', 'breather hose runs from the pressure-regulating valve to']],
 };
 for (const [id, extra] of Object.entries(MORE_LINKS)) PARTS[id].links.push(...extra);
 for (const [id, extra] of Object.entries(ENGINE_LINKS)) PARTS[id].links.push(...extra);

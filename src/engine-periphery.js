@@ -155,7 +155,7 @@ export function buildPeriphery(A) {
     g.add(tube(p, 32, M.plastic, { cap: false, seg: 160, radial: 20 }));
     screwClamp(g, p.at(-1), p.at(-2), 32, 6);
     g.add(put(sleeve(-9, 9, 30, 36, M.rubber), 0, 0, 0)).children.at(-1).position.set(-186, 195.5, -185);   // connecting piece with O-ring at the compressor
-    g.add(put(cyl('y', 9, 22, M.plastic, 14), 40, 428, -238));                                // crankcase breather connection
+    g.add(put(cyl('y', 9, 26, M.plastic, 14), 40, 426, -238), put(torus('y', 9.6, 1.4, M.plastic), 40, 437, -238));   // crankcase breather connection
     for (const x of [-40, 110]) g.add(put(box(26, 6, 30, M.plastic, 2), x, 386 + (110 - x) * 0.03, -208));   // retaining lugs
   });
 
@@ -346,7 +346,7 @@ export function buildPeriphery(A) {
     g.add(put(box(66, 9, 9, M.plasticGrey, 2), 172, 352, 194));                                                     // hose connector strip on the valve unit (item 27)
     vl([[172, 350, 196], [120, 331, 178], [-100, 331, 178], [-168, 345, 212], [-176, 352, 222]]);                   // to the vacuum reservoir
     vl([[194, 350, 194], [236, 330, 122], [252, 318, 0], [250, 316, -100], [200, 312, -190], [60, 305, -238], [-30, 280, -252], [-62, 200, -256], [-84, 150, -240], [-92, 136, -222]]);   // N75 → turbocharger actuator
-    vl([[150, 348, 194], [90, 290, 206], [-40, 226, 188], [-70, 196, 158], [-66, HY - 44, 152]]);                    // N18 → EGR valve
+    vl([[150, 348, 194], [90, 290, 206], [-30, 232, 198], [-56, 206, 188], [-58, HY - 40, 180]]);                    // N18 → EGR valve
     vl([[166, 346, 198], [230, 336, 126], [246, 331, 0], [243, 335, -95], [170, 330, -165], [60, 318, -170], [30, 312, -162]]);   // N345 → EGR cooler flap
     vl([[200, 346, 198], [240, 336, 186], [272, 326, 150], [296, 322, 112]]);                       // vent hose to the air filter housing
   });
@@ -362,7 +362,7 @@ export function buildPeriphery(A) {
     br([[274, 318, -44], [254, 322, -46], [230, HY + 74, -42]]);                              // G62
     br([[190, 367, 154], [178, 360, 170], [172, HY + 106, 178]]);                             // N18 / N345 / N75
     line(g, [[140, 366, 152], [146, 342, 142], [145, HY + 91, 134]], 3.4, M.loom);            // glow plug rail
-    br([[60, 366, 152], [58, 330, 182], [62, 250, 196], [60, 182, 188]]);                     // V157
+    br([[60, 366, 152], [64, 330, 186], [72, 250, 204], [70, 172, 196]]);                     // V157
     br([[-60, 366, 152], [-70, 320, 190], [-100, 220, 262], [-120, 150, 334]]);               // G31 / G42
     br([[-110, 366, 152], [-112, 320, 192], [-112, 262, 238]]);                               // alternator DF / L
     br([[-214, 352, 138], [-214, 345, 110], [-212, HY + 104, E.camZ + 8]]);                   // G40

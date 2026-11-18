@@ -411,7 +411,11 @@ export function buildCore(A, anim) {
     // crankcase breather pressure-regulating valve + hose
     g.add(put(cyl('y', 50, 14, M.plastic, 40), 152, HY + 193, -34));
     g.add(put(cyl('y', 30, 6, M.plasticGrey, 32), 152, HY + 203, -34));
-    g.add(tube([[150, HY + 198, -60], [110, HY + 206, -84], [20, HY + 204, -104], [-70, HY + 196, -112]], 11, M.rubber));
+    g.add(put(cyl('z', 12, 20, M.plastic, 18), 150, HY + 196, -78));                                  // valve outlet
+    // breather hose: from the pressure-regulating valve to the connection on the intake pipe, between
+    // the air mass meter and the turbocharger, so the blow-by gases are drawn back into the engine
+    g.add(tube([[150, HY + 196, -86], [140, HY + 204, -120], [108, HY + 214, -176], [62, HY + 214, -222], [42, HY + 206, -236], [40, HY + 196, -238]], 11, M.rubber, { cap: false }));
+    for (const [x, y, z, ax] of [[150, HY + 196, -92, 'z'], [40, HY + 199, -238, 'y']]) g.add(put(cyl(ax, 12, 10, M.steel, 20), x, y, z));   // spring band clamps
     for (const x of [-190, -64, 64, 190]) for (const z of [-112, 112]) g.add(put(hex('y', 5.5, 5, M.steelDark), x, HY + 187, z));
   });
 
