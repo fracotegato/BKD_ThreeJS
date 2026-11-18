@@ -136,20 +136,27 @@ export function buildCore(A, anim) {
   });
 
   // ───────────────────────── Oil sump ─────────────────────────
-  A.part('sump', { cut: true, casing: true, explode: [0, -330, 0], anchor: [60, -120, 116] }, (g) => {
-    const outer = [[-118, -68], [-112, -150], [-100, -162], [100, -162], [112, -150], [118, -68]];
-    const inner = [[114, -68], [108, -148], [98, -158], [-98, -158], [-108, -148], [-114, -68]];
-    g.add(solid(put(extrudeX(poly([...outer, ...inner]), 406, M.aluRough), -7, 0, 0)));
-    g.add(solid(put(extrudeX(poly(outer), 4, M.aluRough), -212, 0, 0)));
-    g.add(solid(put(extrudeX(poly(outer), 4, M.aluRough), 198, 0, 0)));
-    const fl = rrect(-214, -124, 200, 124, 10);
-    fl.holes.push(rectPath(-204, -110, 190, 110));
+  // Outside size from parts listings for 038 103 603 AG: 430 × 277 × 120 mm. The 277 mm is across the two
+  // lugs that bolt the sump to the gearbox; the body itself follows the 248 mm wide crankcase flange.
+  A.part('sump', { cut: true, casing: true, explode: [0, -330, 0], anchor: [60, -128, 116] }, (g) => {
+    const B = -180;                                                     // underside; the floor ribs reach 120 mm below the flange face
+    const outer = [[-118, -68], [-112, B + 14], [-100, B], [100, B], [112, B + 14], [118, -68]];
+    const inner = [[114, -68], [108, B + 16], [98, B + 4], [-98, B + 4], [-108, B + 16], [-114, -68]];
+    g.add(solid(put(extrudeX(poly([...outer, ...inner]), 422, M.aluRough), -3, 0, 0)));
+    g.add(solid(put(extrudeX(poly(outer), 4, M.aluRough), -216, 0, 0)));
+    g.add(solid(put(extrudeX(poly(outer), 4, M.aluRough), 210, 0, 0)));
+    const fl = rrect(-218, -124, 212, 124, 10);
+    fl.holes.push(rectPath(-208, -110, 202, 110));
     g.add(solid(put(extrudeY(fl, 6, M.aluRough), 0, -68, 0)));
-    for (let x = -190; x <= 180; x += 46) for (const z of [-118, 118]) g.add(put(hex('y', 5, 5, M.steelDark), x, -70, z));
-    for (let x = -180; x <= 180; x += 40) for (const z of [-116, 116]) g.add(put(box(7, 78, 6, M.aluRough, 2), x, -112, z));
-    for (const z of [-60, 0, 60]) g.add(put(box(380, 5, 8, M.aluRough, 2), -7, -164, z));
-    g.add(put(hex('z', 9, 10, M.steel), 150, -146, -114));              // drain plug
-    g.add(put(cyl('y', 24, 8, M.plastic), 40, -164, 0));                // oil level / temperature sender
+    for (let x = -194; x <= 190; x += 48) for (const z of [-118, 118]) g.add(put(hex('y', 5, 5, M.steelDark), x, -70, z));
+    for (let x = -180; x <= 180; x += 40) for (const z of [-116, 116]) g.add(put(box(7, 92, 6, M.aluRough, 2), x, -119, z));
+    for (const z of [-60, 0, 60]) g.add(put(box(396, 5, 8, M.aluRough, 2), -3, B - 0.5, z));
+    for (const s of [-1, 1]) {                                          // lugs bolted to the clutch housing
+      g.add(put(box(16, 46, 15, M.aluRough, 4), 204, -94, s * 131));
+      g.add(put(hex('x', 6.5, 6, M.steelDark), 194, -94, s * 131));
+    }
+    g.add(put(hex('z', 9, 10, M.steel), 150, B + 16, -114));            // drain plug
+    g.add(put(cyl('y', 24, 8, M.plastic), 40, B - 2, 0));               // oil level / temperature sender
   });
 
   // ───────────────────────── Crankshaft ─────────────────────────
@@ -388,7 +395,7 @@ export function buildCore(A, anim) {
     E.cylX.forEach((cx) => {
       const p = new THREE.Group();
       p.add(latheY([[0, 0], [2, 0], [2.5, 3], [2.5, 30], [4, 32], [4, 98], [5, 99], [5, 118], [0, 118]], M.steel, 16));
-      p.add(put(hex('y', 6, 8, M.steel), 0, 122, 0));
+      p.add(put(hex('y', 4.62, 8, M.steel), 0, 122, 0));                 // 8 mm across flats (parts listing)
       p.add(put(cyl('y', 2.2, 14, M.brass, 12), 0, 133, 0));
       p.add(put(cyl('y', 5.5, 16, M.plastic, 16), 0, 143, 0));
       p.add(put(cyl('y', 2.6, 12, M.steel, 12), 0, 7, 0));

@@ -194,19 +194,6 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
   #systems button { font-size: 12px; padding: 5px 10px 5px 8px; }
   #systems button em { display: none; }
 }
-@media (max-width: 760px) {
-  #panel { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: 40vh; }
-  #bottom { left: 8px; right: 8px; bottom: calc(40vh + 16px); align-items: stretch; }
-  #toolbar { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; pointer-events: auto; scrollbar-width: none; }
-  #toolbar .grp { flex: none; }
-  #brand .scale { display: none; }
-  #systems { top: 74px; }
-  #toolbar .toggles .tg { padding: 0 8px; }
-  #systems { left: 8px; flex-direction: row; flex-wrap: wrap; right: 8px; }
-  #systems button span { display: none; }
-  #brand { left: 12px; top: 10px; max-width: none; }
-  #hud { display: none !important; }
-}
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
@@ -235,4 +222,277 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 }
 #toolbar .views .tg { color: #cfd6de; }
 #toolbar .views .tg.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-@media (max-width: 760px) { #toolbar .grp[data-cap]::before { display: none; } #toolbar { padding-top: 0; row-gap: 8px; } }
+
+/* ═════════ phone layout ═════════
+   Everything below is scoped to html.phone, a class main.js sets from matchMedia
+   ((max-width: 760px), or a short landscape screen). Wider windows never get the class,
+   so the desktop layout above is untouched.
+   Structure: top bar (#brand) + status pill (#context) · canvas · bottom navigation (#mnav)
+   that opens one sheet at a time: Parts = #systems + #panel, the others = groups of #toolbar. */
+#mnav, #mhome, #brand .m-hint { display: none; }
+
+html.phone {
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px);
+  --top-h: calc(48px + var(--safe-t));
+  --nav-h: calc(58px + var(--safe-b));
+  --peek-h: 106px;
+  --sheet-h: 56vh;
+  --cover: 0px;                 /* height of the part sheet that sits between the navigation and the HUD */
+  --sheet-bg: rgba(19, 23, 29, 0.97);
+}
+@supports (height: 1dvh) { html.phone { --sheet-h: 56dvh; } }
+html.phone[data-panel='peek'] { --cover: var(--peek-h); }
+html.phone[data-kb] { --sheet-h: calc(100vh - var(--top-h) - var(--nav-h)); }
+@supports (height: 1dvh) { html.phone[data-kb] { --sheet-h: calc(100dvh - var(--top-h) - var(--nav-h)); } }
+
+html.phone body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html.phone button, html.phone label { touch-action: manipulation; }
+html.phone #tip { z-index: 9; }
+@keyframes m-in-a { from { opacity: 0; transform: translateY(14px); } }
+@keyframes m-in-b { from { opacity: 0; transform: translateY(14px); } }
+
+/* ── top bar: short title, hint, reset view ── */
+html.phone #brand {
+  left: 0; right: 0; top: 0; max-width: none; height: var(--top-h); z-index: 4;
+  padding: var(--safe-t) calc(56px + var(--safe-r)) 0 calc(14px + var(--safe-l));
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px);
+}
+html.phone #brand .mark { gap: 8px; flex: none; }
+html.phone #brand .big { font-size: 22px; }
+html.phone #brand .code { font-size: 13px; padding: 2px 7px 1px; }
+html.phone #brand .sub, html.phone #brand .scale { display: none; }
+html.phone #brand .m-hint {
+  display: block; margin-left: auto; min-width: 0; color: var(--muted); font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html.phone #mhome {
+  display: grid; place-items: center; position: fixed; z-index: 8; top: calc(var(--safe-t) + 4px); right: calc(8px + var(--safe-r));
+  width: 40px; height: 40px; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: #cfd6de;
+}
+html.phone #mhome:active { background: rgba(255, 255, 255, 0.14); }
+#mhome svg, #mnav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── status pill under the top bar: what is shown + the way back ── */
+html.phone #context {
+  position: fixed; z-index: 4; top: calc(var(--top-h) + 8px); left: calc(8px + var(--safe-l)); right: calc(8px + var(--safe-r));
+  align-self: auto; margin: 0; max-width: none; flex-wrap: nowrap; justify-content: flex-start; gap: 10px;
+  padding: 6px 6px 6px 14px; border-radius: 16px; font-size: 13px; background: var(--sheet-bg);
+  animation: m-in-a 0.2s ease-out;
+}
+html.phone #context.idle { display: none; }
+html.phone #context .m-what { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+html.phone #context .m-what b, html.phone #context .m-what small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.phone #context .m-what b { font-size: 14px; }
+html.phone #context .m-what small { font-size: 13px; }
+html.phone #context button { flex: none; height: 40px; padding: 0 14px; font-size: 13px; white-space: nowrap; }
+html.phone #context button.primary:hover { background: var(--accent); }
+
+/* ── bottom navigation ── */
+html.phone #mnav {
+  display: flex; position: fixed; z-index: 7; left: 0; right: 0; bottom: 0; height: var(--nav-h);
+  padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
+  background: var(--panel-solid); border-top: 1px solid var(--line);
+}
+#mnav button {
+  flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: none; border: 0; padding: 0; color: var(--muted); font-size: 13px; line-height: 1.2; white-space: nowrap;
+}
+#mnav button:active { background: rgba(255, 255, 255, 0.06); }
+#mnav button.on { color: var(--accent); }
+#mnav button.on::before { content: ''; position: absolute; top: -1px; left: 24%; right: 24%; height: 2px; border-radius: 0 0 2px 2px; background: var(--accent); }
+#mnav button.dot::after {
+  content: ''; position: absolute; top: 8px; left: calc(50% + 8px); width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--panel-solid);
+}
+
+/* ── part sheet / parts list (#panel) ── */
+html.phone #panel {
+  display: none; left: 0; right: 0; top: auto; bottom: var(--nav-h); width: auto; height: var(--sheet-h); z-index: 5;
+  border-width: 1px 0 0; border-radius: 18px 18px 0 0; background: var(--sheet-bg); overflow: visible;
+  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.42);
+}
+html.phone[data-panel='full'] #panel { display: flex; animation: m-in-a 0.2s ease-out; }
+html.phone[data-panel='peek'] #panel { display: flex; height: var(--peek-h); animation: m-in-b 0.2s ease-out; }
+html.phone #panel .head { position: relative; flex: none; padding: 0 16px; touch-action: none; }
+html.phone #panel .m-grab { position: relative; display: block; width: 100%; height: 24px; padding: 0; background: none; border: 0; }
+html.phone #panel .m-grab i { display: block; width: 40px; height: 4px; margin: 0 auto; border-radius: 2px; background: #4a535f; }
+html.phone #panel .m-grab::before { content: ''; position: absolute; left: 0; right: 0; top: -16px; bottom: 0; }
+html.phone #panel .m-actions { position: absolute; right: 10px; top: 22px; display: flex; gap: 6px; }
+html.phone #panel .m-actions button {
+  display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 10px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text);
+}
+html.phone #panel .m-actions button:active { background: rgba(255, 255, 255, 0.14); }
+html.phone #panel .m-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html.phone[data-panel='full'] #panel .m-exp svg { transform: rotate(180deg); }
+html.phone #panel .kicker { font-size: 13px; letter-spacing: 0.05em; }
+html.phone #panel h1 { font-size: 20px; margin-top: 4px; }
+html.phone #panel .codechip { font-size: 13px; }
+html.phone #panel .back { min-height: 40px; margin: 0; font-size: 14px; }
+html.phone #panel .back:hover { color: var(--muted); }
+html.phone #panel .m-line { margin: 3px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.phone[data-panel='full'] #panel .m-line { display: none; }
+html.phone[data-panel='peek'] #panel .head { cursor: pointer; padding-right: 108px; }
+html.phone[data-panel='peek'] #panel .head h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.phone[data-panel='peek'] #panel .back, html.phone[data-panel='peek'] #panel .codechip,
+html.phone[data-panel='peek'] #panel .tabs, html.phone[data-panel='peek'] #panel .body { display: none; }
+html.phone #panel .head.m-home { height: 76px; padding: 0; }      /* grab handle + room for the system chips */
+html.phone #panel .tabs { flex: none; gap: 22px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
+html.phone #panel .tabs::-webkit-scrollbar { display: none; }
+html.phone #panel .tabs button { flex: none; padding: 13px 0 11px; font-size: 13px; letter-spacing: 0.03em; text-transform: none; white-space: nowrap; }
+html.phone #panel .tabs button:not(.on):hover { color: var(--muted); }
+html.phone #panel .body { padding: 14px 16px calc(22px + var(--kb, 0px)); overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+html.phone #panel .hint { display: none; }                         /* keyboard shortcuts: no use on a phone */
+html.phone #panel .stat span, html.phone #panel .note, html.phone #panel .env, html.phone #panel .links span { font-size: 13px; }
+html.phone #panel .plist h3 { font-size: 13px; margin-top: 14px; }
+html.phone #panel .links button, html.phone #panel .plist button { min-height: 44px; font-size: 14px; }
+html.phone #panel .links button:hover, html.phone #panel .plist button:hover { border-color: var(--line); background: rgba(255, 255, 255, 0.03); }
+html.phone #panel .links button:active, html.phone #panel .plist button:active { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+html.phone #panel .links b { font-size: 14px; }
+html.phone #panel .plist button code { font-size: 13px; }
+html.phone #panel .search { height: 44px; font-size: 16px; }       /* 16 px keeps iOS from zooming the page on focus */
+
+/* ── system filter chips: a scrolling strip at the top of the Parts sheet ── */
+html.phone #systems { display: none; }
+html.phone[data-panel='full']:not([data-sel]) #systems {
+  display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; z-index: 6;
+  left: 0; right: 0; top: auto; bottom: calc(var(--nav-h) + var(--sheet-h) - 72px); height: 48px; padding: 0 28px 0 14px;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-x;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent);
+  animation: m-in-a 0.2s ease-out;
+}
+html.phone #systems::-webkit-scrollbar { display: none; }
+html.phone #systems button {
+  flex: none; height: 40px; padding: 0 14px 0 11px; font-size: 13px; color: #c4ccd6; touch-action: pan-x;
+  background: rgba(255, 255, 255, 0.045); border-color: var(--line); backdrop-filter: none;
+}
+html.phone #systems button span { display: inline; }
+html.phone #systems button em { display: none; }
+html.phone #systems button.on { background: color-mix(in srgb, var(--c) 22%, #14181e); border-color: var(--c); color: #fff; }
+
+/* ── HUD + the sheets made of toolbar groups ── */
+html.phone #bottom { left: 0; right: 0; bottom: calc(var(--nav-h) + var(--cover)); gap: 0; align-items: stretch; z-index: 5; }
+html.phone #hud { margin: 0 8px 8px; padding: 8px 10px; gap: 12px; background: var(--sheet-bg); }
+html.phone[data-panel='full'] #hud, html.phone[data-sheet='apart'] #hud, html.phone[data-sheet='view'] #hud { display: none; }   /* portrait: no room above a tall sheet */
+html.phone #hud .angle { flex: none; }
+html.phone #hud .angle span { font-size: 13px; letter-spacing: 0.02em; text-transform: none; white-space: nowrap; }
+html.phone #hud .cyls { flex: 1; min-width: 0; grid-template-columns: repeat(auto-fit, minmax(116px, 1fr)); counter-reset: cyl; }
+html.phone #hud .cyl { display: flex; align-items: center; gap: 3px; padding: 6px; font-size: 0; counter-increment: cyl; }   /* "Cyl. n" becomes a number badge */
+html.phone #hud .cyl::before {
+  content: counter(cyl); flex: none; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+  font: 600 13px var(--mono); color: var(--muted); border: 1px solid var(--line-strong);
+}
+html.phone #hud .cyl b { font-size: 13px; white-space: nowrap; }
+@media (max-width: 359px) {      /* very narrow phones: crank angle on its own line above the cylinders */
+  html.phone #hud { flex-wrap: wrap; gap: 6px 12px; }
+  html.phone #hud .angle { width: 100%; display: flex; align-items: baseline; gap: 8px; }
+  html.phone #hud .angle b { min-width: 0; }
+}
+
+html.phone #toolbar { display: none; }
+html.phone[data-sheet='apart'] #toolbar, html.phone[data-sheet='view'] #toolbar, html.phone[data-sheet='run'] #toolbar {
+  display: flex; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; align-items: stretch; gap: 16px;
+  padding: 0 14px 18px; pointer-events: auto; max-height: min(62vh, 100vh - var(--top-h) - var(--nav-h) - 96px); overflow-y: auto;
+  background: var(--sheet-bg); border-top: 1px solid var(--line); border-radius: 18px 18px 0 0; box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.42);
+  overscroll-behavior: contain; touch-action: pan-y; animation: m-in-a 0.2s ease-out;
+}
+html.phone #toolbar::before { content: ''; flex: none; order: -2; width: 40px; height: 4px; margin: 10px auto -4px; border-radius: 2px; background: #4a535f; }
+html.phone #toolbar .grp { display: none; padding: 0; gap: 8px; background: none; border: 0; border-radius: 0; backdrop-filter: none; }
+html.phone[data-sheet='apart'] #toolbar .grp.views, html.phone[data-sheet='apart'] #toolbar .grp[data-cap='Pull apart'],
+html.phone[data-sheet='view'] #toolbar .grp[data-cap='View'], html.phone[data-sheet='view'] #toolbar .grp[data-cap='Show'],
+html.phone[data-sheet='run'] #toolbar .grp[data-cap='Engine'] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.phone #toolbar .grp.views { order: -1; }
+html.phone #toolbar .grp[data-cap]::before {
+  display: block; position: static; grid-column: 1 / -1; font: 13px var(--mono); letter-spacing: 0.06em; color: var(--muted);
+}
+html.phone #toolbar .grp[data-cap='Show']::before { content: 'Show'; }
+html.phone #toolbar .grp[data-cap='View']::before { content: 'Camera'; }
+html.phone #toolbar button {
+  height: 46px; min-width: 0; padding: 0 6px; font-size: 14px; border-radius: 10px; color: #cfd6de;
+  background: rgba(255, 255, 255, 0.045); border: 1px solid var(--line);
+}
+html.phone #toolbar button:active { background: rgba(255, 255, 255, 0.14); }
+html.phone #toolbar .tg { font-size: 14px; padding: 0 6px; color: #cfd6de; }
+html.phone #toolbar .tg.on { background: rgba(255, 178, 36, 0.16); border-color: rgba(255, 178, 36, 0.55); color: var(--accent); }
+html.phone #toolbar .views .tg.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+html.phone[data-sheet] #toolbar .grp[data-cap='View'] { grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; }
+html.phone #toolbar .grp[data-cap='View'] button { height: 60px; flex-direction: column; gap: 3px; padding: 0 2px; font-size: 13px; white-space: nowrap; }
+html.phone #toolbar .grp[data-cap='View'] button::after { content: attr(aria-label); }
+html.phone #toolbar [data-act='left']::after { content: 'Left' !important; }
+html.phone #toolbar [data-act='right']::after { content: 'Right' !important; }
+html.phone #toolbar [data-act='home']::after { content: 'Reset' !important; }
+html.phone #toolbar .slider { grid-column: 1 / -1; height: 46px; padding: 0 2px; gap: 14px; font-size: 14px; color: #cfd6de; }
+html.phone #toolbar .slider span { flex: none; min-width: 78px; font-size: 14px; }
+html.phone #toolbar .slider.rpm span { font: 14px var(--mono); min-width: 70px; }
+html.phone #toolbar .slider input { flex: 1; min-width: 0; }
+html.phone[data-sheet] #toolbar .grp[data-cap='Engine'] { grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+html.phone #toolbar .grp[data-cap='Engine'] .slider { grid-column: auto; }
+html.phone #toolbar .run { height: 48px; padding: 0 22px 0 14px; font-size: 15px; border-color: var(--line-strong); }
+html.phone #toolbar .run.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+html.phone input[type='range'] { width: 100%; height: 44px; background: none; }
+html.phone input[type='range']::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: #3a424d; }
+html.phone input[type='range']::-moz-range-track { height: 6px; border-radius: 3px; background: #3a424d; }
+html.phone input[type='range']::-webkit-slider-thumb { width: 26px; height: 26px; margin-top: -10px; border-width: 3px; }
+html.phone input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-width: 3px; }
+
+/* ── 3D labels: text for the nearest few only, the rest are dots; taps are resolved on the canvas so labels never block a drag or pinch ── */
+html.phone .lbl { pointer-events: none; }
+html.phone .lbl span { font: 600 13px var(--display); letter-spacing: 0.01em; text-transform: none; padding: 3px 8px; max-width: min(56vw, 210px); overflow: hidden; text-overflow: ellipsis; }
+html.phone .lbl span em { display: none; }      /* component codes are in the part sheet */
+html.phone .lbl.flip span { position: absolute; right: 100%; margin: 0 12px 0 0; }
+html.phone .lbl:not(.mini) { z-index: 2; }
+html.phone .lbl.mini i { width: 9px; height: 9px; margin-left: -4.5px; border-width: 1.5px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 30%, transparent), 0 1px 4px rgba(0, 0, 0, 0.5); }
+html.phone .lbl.occ { visibility: hidden; }
+html.phone .lbl.dim span { font: 600 13px var(--mono); }
+
+/* ── landscape phone: navigation rail on the left, sheets dock on the right ── */
+html.phone.land {
+  --rail-w: calc(72px + var(--safe-l));
+  --side-w: min(360px, 46vw);
+  --side: 0px;                  /* width covered on the right */
+  --cover: 0px;
+}
+html.phone.land[data-panel='full'], html.phone.land[data-sheet='apart'], html.phone.land[data-sheet='view'], html.phone.land[data-sheet='run'] { --side: calc(var(--side-w) + var(--safe-r)); }
+html.phone.land[data-panel='peek'] { --side: calc(336px + var(--safe-r)); }
+html.phone.land #mnav {
+  top: 0; right: auto; width: var(--rail-w); height: auto; flex-direction: column;
+  padding: var(--safe-t) 0 calc(54px + var(--safe-b)) var(--safe-l); border-top: 0; border-right: 1px solid var(--line);
+}
+html.phone.land #mnav button.on::before { top: 22%; bottom: 22%; left: -1px; right: auto; width: 2px; height: auto; border-radius: 0 2px 2px 0; }
+html.phone.land #mhome { top: auto; right: auto; left: calc(var(--safe-l) + 14px); bottom: calc(7px + var(--safe-b)); width: 44px; }
+html.phone.land #brand {
+  left: calc(var(--rail-w) + 8px); right: auto; top: calc(6px + var(--safe-t)); height: 44px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 12px;
+}
+html.phone.land[data-ctx] #brand { display: none; }
+html.phone.land #context {
+  top: calc(6px + var(--safe-t)); left: calc(var(--rail-w) + 8px); right: auto;
+  max-width: calc(100vw - var(--rail-w) - var(--side) - 16px);
+}
+html.phone.land #panel { top: 0; bottom: 0; left: auto; right: 0; width: var(--side); height: auto; padding: var(--safe-t) var(--safe-r) var(--safe-b) 0; border-width: 0 0 0 1px; border-radius: 0; box-shadow: -12px 0 34px rgba(0, 0, 0, 0.42); }
+html.phone.land[data-panel='peek'] #panel {
+  top: auto; bottom: calc(8px + var(--safe-b)); right: calc(8px + var(--safe-r)); width: 320px; height: var(--peek-h); padding: 0;
+  border-width: 1px; border-radius: 16px;
+}
+html.phone.land #panel .m-grab i { visibility: hidden; }
+html.phone.land #panel .m-grab { height: 14px; }
+html.phone.land #panel .m-actions { top: 12px; }
+html.phone.land #panel .head.m-home { height: 64px; }
+html.phone.land[data-panel='peek'] { --peek-h: 96px; }
+html.phone.land[data-panel='full']:not([data-sel]) #systems {
+  left: auto; right: var(--safe-r); width: var(--side-w); bottom: auto; top: calc(12px + var(--safe-t));
+}
+html.phone.land #bottom { left: var(--rail-w); right: var(--side); bottom: var(--safe-b); align-items: center; }
+html.phone.land #hud { width: calc(100% - 16px); max-width: 620px; }
+html.phone.land[data-panel] #hud { display: flex; }                 /* landscape: the HUD sits beside the sheet, keep it */
+html.phone.land[data-panel] #hud[hidden] { display: none; }
+html.phone.land[data-sheet='apart'] #toolbar, html.phone.land[data-sheet='view'] #toolbar, html.phone.land[data-sheet='run'] #toolbar {
+  position: fixed; top: 0; bottom: 0; right: 0; width: var(--side); max-height: none; gap: 12px;
+  padding: calc(14px + var(--safe-t)) calc(14px + var(--safe-r)) calc(14px + var(--safe-b)) 14px;
+  border-top: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: -12px 0 34px rgba(0, 0, 0, 0.42);
+}
+html.phone.land #toolbar::before { display: none; }
+html.phone.land #toolbar button { height: 42px; }
+html.phone.land #toolbar .grp[data-cap='View'] button { height: 56px; }

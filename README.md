@@ -31,15 +31,16 @@ npm run dev
 Then open http://localhost:5173.
 
 ```bash
-npm run smoke              # headless build check: part sizes, belt length, kinematics
-node scripts/check-data.mjs  # every part has data, every connection points to a real part
-node scripts/overlap.mjs    # lists pairs of parts that run through each other
+npm run check              # build check (part sizes, belt length, kinematics) and part-data check
+npm run overlap            # lists pairs of parts that run through each other
 npm run build              # production build in dist/
 ```
 
 Pushing to `main` builds and publishes the page through the workflow in `.github/workflows/deploy.yml`. In the repository settings, **Pages → Source** must be set to **GitHub Actions**.
 
 ## How it is built
+
+Notes for working on this project with Claude Code are in `CLAUDE.md`.
 
 - Three.js 0.170 and Vite. All geometry is procedural; there are no imported meshes.
 - `src/engine-core.js` engine, `engine-ancillaries.js` ancillaries, `engine-turbo.js` turbocharger, `engine-gearbox.js` gearbox and clutch, `engine-periphery.js` engine bay, `engine-detail.js` small parts and the unit injectors.

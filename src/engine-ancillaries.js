@@ -13,6 +13,14 @@ const TAU = Math.PI * 2;
 const DEG = Math.PI / 180;
 const pr = (teeth) => (teeth * E.pitch) / TAU;
 const ring = (n, r, fn, phase = 0) => { for (let k = 0; k < n; k++) { const a = phase + (k * TAU) / n; fn(r * Math.cos(a), r * Math.sin(a), a); } };
+/** Poly-V profile for a latheX pulley: n grooves of the PK section (3.56 mm pitch) starting at x0, rib tips at rTip. */
+const vGrooves = (x0, n, rTip, depth = 2.6, pitch = 3.56) => {
+  const o = [];
+  for (let i = 0; i < n; i++) o.push([x0 + i * pitch, rTip], [x0 + (i + 0.5) * pitch, rTip - depth]);
+  o.push([x0 + n * pitch, rTip]);
+  return o;
+};
+const PK6 = -10.68;            // first rib of a 6PK belt (21.36 mm wide) centred on the belt plane
 
 export function buildAncillaries(A, anim) {
   const HY = E.headY;
@@ -37,33 +45,36 @@ export function buildAncillaries(A, anim) {
   });
 
   // ───────────────────────── Vibration damper / poly-V pulley ─────────────────────────
+  // Ø 140–143 mm over the six ribs and 41–42 mm wide in the parts listings for 03G 105 243.
+  const CPR = 71;
   A.part('crankPulley', { explode: [-400, 0, 0], anchor: [E.auxX - 16, 34, -52] }, (g) => {
     const p = new THREE.Group();
-    p.add(latheX([[-14, 20], [-14, 60], [-12, 76], [11, 76], [13, 60], [13, 20]], M.steelDark, 56));
-    p.add(put(cyl('x', 61, 1.5, M.rubber, 56), -14.4, 0, 0));
-    p.add(put(cyl('x', 48, 3, M.steelDark, 48), -15.5, 0, 0));
-    p.add(put(cyl('x', 24, 4, M.steel, 32), -17, 0, 0));
-    p.add(put(hex('x', 12, 10, M.steelDark), -21, 0, 0));
-    ring(6, 36, (y, z) => p.add(put(hex('x', 4.5, 5, M.steel), -18, y, z)));
+    p.add(latheX([[-28, 16], [-28, 35], [-25, 38], [-15, 38], [-15, 54], [-13, 56], [-13, CPR - 1], [-12, CPR], ...vGrooves(PK6, 6, CPR), [12, CPR], [13, CPR - 1], [13, 20]], M.steelDark, 64));
+    p.add(latheX([[-13.8, 56], [-13.8, 61], [-13, 61], [-13, 56]], M.rubber, 64));                 // rubber track between hub and inertia ring
+    p.add(put(cyl('x', 20, 3, M.steel, 32), -29.5, 0, 0));
+    p.add(put(hex('x', 11, 6, M.steelDark), -32, 0, 0));
+    ring(6, 28, (y, z) => p.add(put(hex('x', 4.5, 5, M.steel), -30, y, z)));
     p.position.set(E.auxX, 0, 0);
     g.add(p);
     anim.spinners.push({ o: p, ratio: 1 });
   });
 
   // ───────────────────────── Poly-V belt, tensioner and ancillary bracket ─────────────────────────
-  const ALT = { u: 250, v: 195, r: 29 }, AC = { u: 213, v: 0, r: 60 }, TEN = { u: 112, v: 174, r: 33 };
+  // Pulley diameters from parts listings: alternator Ø 56 (freewheel pulley), A/C compressor Ø 110, both 6 ribs.
+  // With these and the damper above, the belt path comes to about 1054 mm; the catalogue belt is a 6PK1050.
+  const ALT = { u: 250, v: 195, r: 28 }, AC = { u: 213, v: 0, r: 55 }, TEN = { u: 112, v: 174, r: 33 };
   A.part('auxBelt', { explode: [-350, 0, 60], anchor: [E.auxX, 140, 130] }, (g) => {
-    const path = beltPath([{ u: 0, v: 0, r: 76, s: 1 }, { ...TEN, s: -1 }, { ...ALT, s: 1 }, { ...AC, s: 1 }], 4);
+    const path = beltPath([{ u: 0, v: 0, r: CPR, s: 1 }, { ...TEN, s: -1 }, { ...ALT, s: 1 }, { ...AC, s: 1 }], 4);
     const mat = beltMaterial(false);
-    g.add(ribbon(path, { x: E.auxX, width: 21, outer: 2.6, inner: 1.4, pitch: 12, mat }));
-    anim.belts.push({ mat, perRev: (TAU * 76) / 12 });
+    g.add(ribbon(path, { x: E.auxX, width: 21.4, outer: 2.6, inner: 1.4, pitch: 12, mat }));
+    anim.belts.push({ mat, perRev: (TAU * CPR) / 12 });
     const t = new THREE.Group();
     t.add(latheX([[-12, 18], [-12, TEN.r - 2.6], [12, TEN.r - 2.6], [12, 18]], M.plasticGrey, 40));
     t.add(cyl('x', 18, 22, M.steelDark, 24));
     t.add(put(hex('x', 8, 6, M.steel), -13, 0, 0));
     t.position.set(E.auxX, TEN.v, TEN.u);
     g.add(t);
-    anim.spinners.push({ o: t, ratio: -76 / TEN.r });
+    anim.spinners.push({ o: t, ratio: -CPR / TEN.r });
     // tensioner arm + spring housing (the perforated aluminium piece between pulley and alternator)
     const arm = poly([[70, 60], [150, 78], [176, 150], [150, 214], [96, 208], [78, 150]]);
     for (const [z, y, r] of [[112, 174, 14], [128, 104, 16], [150, 176, 9]]) arm.holes.push(circ(z, y, r));
@@ -90,42 +101,50 @@ export function buildAncillaries(A, anim) {
     b.add(put(box(14, 16, 22, M.plasticGrey, 3), -108, -22, -18));
     b.position.set(0, ALT.v, ALT.u);
     g.add(b);
-    const p = new THREE.Group();
-    p.add(latheX([[-12, 12], [-12, ALT.r - 2.4], [12, ALT.r - 2.4], [12, 12]], M.steel, 32));
-    p.add(put(cyl('x', 9, 30, M.steelDark, 16), 6, 0, 0));
-    p.add(put(cyl('x', 14, 6, M.plastic, 20), -14, 0, 0));
+    const p = new THREE.Group();                                                                    // freewheel pulley, Ø 56 × 41 mm, 6 ribs
+    p.add(latheX([[-17, 12], [-17, ALT.r - 5], [-12, ALT.r - 5], [-11.5, ALT.r], ...vGrooves(PK6, 6, ALT.r), [11.5, ALT.r], [12, ALT.r - 5], [24, ALT.r - 5], [24, 12]], M.steel, 40));
+    p.add(put(cyl('x', 9, 30, M.steelDark, 16), 8, 0, 0));
+    p.add(put(cyl('x', 17, 5, M.plastic, 24), -19, 0, 0));                                          // dust cap of the overrunning clutch
     p.position.set(E.auxX, ALT.v, ALT.u);
     g.add(p);
-    anim.spinners.push({ o: p, ratio: 76 / ALT.r });
+    anim.spinners.push({ o: p, ratio: CPR / ALT.r });
     // cast bracket carrying alternator and A/C compressor on the front of the block
     g.add(put(box(104, 196, 44, M.aluRough, 8), -186, 112, 136));
     for (const y of [40, 110, 180]) g.add(put(box(96, 8, 50, M.aluRough, 2), -186, y, 137));
   });
 
   // ───────────────────────── A/C compressor ─────────────────────────
+  // Variable swash-plate compressor (Sanden PXE16 / Denso 7SEU17C on this platform). Parts listings give a
+  // Ø 110 mm six-rib pulley and 216 mm overall length; the body diameter is scaled from photographs (≈).
   A.part('acCompressor', { cut: true, explode: [-40, -60, 230], anchor: [-160, AC.v + 20, AC.u + 56] }, (g) => {
     const b = new THREE.Group();
-    b.add(latheX([[-240, 24], [-240, 50], [-232, 56], [-86, 56], [-74, 48], [-72, 0]], M.alu, 44));
-    for (const x of [-205, -150, -100]) b.add(put(torus('x', 56, 2.4, M.aluDark), x, 0, 0));
-    b.add(put(box(70, 20, 56, M.alu, 5), -112, 54, 0));                                          // port block
+    b.add(latheX([[-248, 22], [-248, 34], [-240, 36], [-240, 50], [-232, 56], [-118, 56], [-116, 58], [-112, 58], [-110, 56], [-96, 56], [-86, 48], [-84, 0]], M.alu, 48));   // nose, cylinder block, rear head
+    for (const x of [-205, -160]) b.add(put(torus('x', 56, 2.4, M.aluDark), x, 0, 0));
+    ring(6, 49, (y, z) => b.add(put(hex('x', 4.5, 5, M.steelDark), -84.5, y, z)), 0.3);            // through-bolts of the rear head
+    b.add(put(box(56, 20, 56, M.alu, 5), -112, 54, 0));                                          // port block on the rear head
     for (const z of [-14, 16]) b.add(put(cyl('y', 10, 10, M.dark, 20), -112, 61, z));
-    ring(3, 62, (y, z, a) => { const e = put(box(150, 16, 20, M.alu, 5), -160, y, z); e.rotation.x = a; b.add(e); }, 2.4);
+    b.add(put(cyl('x', 12, 16, M.aluDark, 20), -77, -24, 18), put(box(11, 13, 17, M.plasticGrey, 2.5), -74, -24, 36));   // regulating valve N280 with plug
+    ring(3, 62, (y, z, a) => {                                                                   // mounting ears, front and rear
+      for (const [x, len] of [[-218, 30], [-104, 34]]) { const e = put(box(len, 16, 22, M.alu, 5), x, y, z); e.rotation.x = a; b.add(e); }
+    }, 2.4);
     b.position.set(0, AC.v, AC.u);
     g.add(b);
     const p = new THREE.Group();
-    p.add(latheX([[-13, 22], [-13, AC.r - 2.4], [13, AC.r - 2.4], [13, 22]], M.steelDark, 44));
-    p.add(put(cyl('x', 44, 4, M.steel, 40), -14, 0, 0));
-    p.add(put(cyl('x', 20, 5, M.steelDark, 28), -17, 0, 0));
-    p.add(put(hex('x', 8, 8, M.steel), -20, 0, 0));
+    p.add(latheX([[-13, 24], [-13, AC.r - 6], [-12, AC.r], ...vGrooves(PK6, 6, AC.r), [12, AC.r], [13, AC.r - 6], [13, 24]], M.steelDark, 48));
+    p.add(put(cyl('x', AC.r - 10, 3, M.steel, 44), -14.5, 0, 0));                                 // driver plate
+    ring(3, 30, (y, z, a) => { const s = put(box(1.5, 9, 34, M.steelDark, 0.5), -16.6, y, z); s.rotation.x = a; p.add(s); }, 0.5);   // leaf-spring links
+    ring(6, 33, (y, z) => p.add(put(cyl('x', 3, 2.4, M.steel, 10), -17, y, z)));                  // their rivets
+    p.add(put(cyl('x', 18, 6, M.steelDark, 28), -18, 0, 0));
+    p.add(put(hex('x', 7, 6, M.steel), -23, 0, 0));
     p.position.set(E.auxX, AC.v, AC.u);
     g.add(p);
-    anim.spinners.push({ o: p, ratio: 76 / AC.r });
+    anim.spinners.push({ o: p, ratio: CPR / AC.r });
   });
 
   // ───────────────────────── Vacuum reservoir ─────────────────────────
   A.part('vacReservoir', { cut: true, explode: [-60, 120, 220], anchor: [-192, 372, 262] }, (g) => {
     const s = new THREE.Group();
-    s.add(sphere(52, M.plastic));
+    s.add(sphere(52, M.plastic, 1, 40, 24));
     s.add(put(torus('y', 52, 2.4, M.plastic), 0, 0, 0));
     s.add(put(cyl('z', 4.5, 22, M.plastic, 12, 3.2), 0, 8, 58));                                  // vacuum connection
     s.add(put(cyl('y', 16, 16, M.plastic, 20), 0, -54, 0));
@@ -140,20 +159,21 @@ export function buildAncillaries(A, anim) {
   const OF = { x: 88, z: 186 };
   A.part('oilFilter', { cut: true, explode: [40, -40, 240], anchor: [OF.x, 206, OF.z] }, (g) => {
     g.add(put(box(84, 96, 46, M.aluRough, 8), OF.x, 98, 134));                                    // mounting flange on the block
-    g.add(put(latheY([[40, 36], [44, 44], [44, 140], [46, 146], [46, 150]], M.aluRough, 44), OF.x, 0, OF.z));
-    g.add(put(cyl('y', 40, 6, M.aluRough, 40), OF.x, 38, OF.z));
-    for (const a of [0.6, 2.2, 3.9, 5.4]) g.add(put(box(12, 96, 12, M.aluRough, 4), OF.x + 46 * Math.cos(a), 96, OF.z + 46 * Math.sin(a)));
+    // canister: deep enough for the Ø 71 × 141 mm element (filter maker's catalogue) under the screw cap
+    g.add(put(latheY([[40, 14], [44, 22], [44, 140], [46, 146], [46, 150]], M.aluRough, 48), OF.x, 0, OF.z));
+    g.add(put(cyl('y', 40, 6, M.aluRough, 40), OF.x, 16, OF.z));
+    for (const a of [0.6, 2.2, 3.9, 5.4]) g.add(put(box(12, 118, 12, M.aluRough, 4), OF.x + 46 * Math.cos(a), 85, OF.z + 46 * Math.sin(a)));
     // screw cap with hexagon
-    g.add(put(latheY([[47, 150], [47, 166], [40, 174], [0, 174]], M.plastic, 44), OF.x, 0, OF.z));
+    g.add(put(latheY([[47, 150], [47, 166], [40, 174], [0, 174]], M.plastic, 48), OF.x, 0, OF.z));
     ring(18, 47.5, (dx, dz) => g.add(put(box(3.5, 14, 3.5, M.plastic), OF.x + dx, 158, OF.z + dz)));
     g.add(put(hex('y', 18, 9, M.plastic), OF.x, 178, OF.z));
     // stacked-plate oil cooler (oil / coolant)
-    g.add(put(box(96, 22, 96, M.aluRough, 5), OF.x, 24, OF.z + 30));
-    for (let k = 0; k < 8; k++) g.add(put(box(116, 5.5, 112, M.alu, 2.5), OF.x, -44 + k * 7.6, OF.z + 42));
-    g.add(put(box(120, 4, 116, M.aluDark, 2), OF.x, -49, OF.z + 42));
+    g.add(put(box(96, 22, 96, M.aluRough, 5), OF.x, 2, OF.z + 30));
+    for (let k = 0; k < 8; k++) g.add(put(box(116, 5.5, 112, M.alu, 2.5), OF.x, -66 + k * 7.6, OF.z + 42));
+    g.add(put(box(120, 4, 116, M.aluDark, 2), OF.x, -71, OF.z + 42));
     for (const dz of [14, 44]) {
-      g.add(put(cyl('y', 9, 34, M.alu, 16), OF.x + 46, 28, OF.z + 42 + dz));
-      g.add(put(torus('y', 9.5, 1.6, M.alu), OF.x + 46, 40, OF.z + 42 + dz));
+      g.add(put(cyl('y', 9, 34, M.alu, 16), OF.x + 46, 6, OF.z + 42 + dz));
+      g.add(put(torus('y', 9.5, 1.6, M.alu), OF.x + 46, 18, OF.z + 42 + dz));
     }
     g.add(put(hex('x', 8, 14, M.brass), OF.x - 48, 112, OF.z - 6));                                // oil pressure switch F1
     g.add(put(cyl('x', 6, 12, M.plastic, 12), OF.x - 60, 112, OF.z - 6));
@@ -163,9 +183,9 @@ export function buildAncillaries(A, anim) {
   A.part('oilPump', { explode: [-60, -240, 0], anchor: [-150, -90, 34] }, (g) => {
     g.add(put(box(64, 44, 70, M.alu, 6), -160, -92, 0));
     g.add(put(cyl('x', 26, 10, M.aluDark, 28), -190, -92, 0));
-    g.add(tube([[-140, -110, 10], [-100, -138, 14], [-40, -146, 10]], 9, M.steelDark));
-    g.add(put(cyl('y', 30, 8, M.steelDark, 28), -40, -150, 10));
-    g.add(put(cyl('y', 27, 2, M.steel, 28), -40, -155, 10));
+    g.add(tube([[-140, -110, 10], [-100, -148, 14], [-40, -160, 10]], 9, M.steelDark));
+    g.add(put(cyl('y', 30, 8, M.steelDark, 28), -40, -164, 10));
+    g.add(put(cyl('y', 27, 2, M.steel, 28), -40, -169, 10));
     const sp = new THREE.Group();
     sp.add(extrudeX(gearShape(24, 20, 24), 7, M.steelDark, { curve: 8 }));
     sp.position.set(-206, -92, 0);
@@ -333,13 +353,13 @@ export function buildAncillaries(A, anim) {
   // ───────────────────────── Charge air hose + G31 / G42 ─────────────────────────
   A.part('chargePipe', { cut: true, explode: [-30, 40, 400], anchor: [-180, 92, 372] }, (g) => {
     // flap unit → rubber hose → rigid plastic pipe → hose → belt-side tank of the charge air cooler (ETKA 145-085)
-    g.add(tube([mw(IN.x, J.mouth + 4, J.off), mw(IN.x, J.mouth - 40, J.off), [-16, 100, 332], [-54, 90, 340]], 29, M.hose, { cap: false }));
-    g.add(tube([[-54, 90, 340], [-110, 88, 342], [-170, 88, 356], [-222, 87, 378]], 27, M.plastic, { cap: false }));
+    g.add(tube([mw(IN.x, J.mouth + 4, J.off), mw(IN.x, J.mouth - 40, J.off), [-16, 100, 332], [-54, 90, 340]], 29, M.hose, { cap: false, radial: 24 }));
+    g.add(tube([[-54, 90, 340], [-110, 88, 342], [-170, 88, 356], [-216, 87, 374]], 27, M.plastic, { cap: false, radial: 24 }));
     const mouth = mframe(g);                                                                          // coupling on the anti-shudder valve
     mouth.add(put(cyl('y', 34, 26, M.plastic, 28), IN.x, J.mouth - 12, J.off), put(torus('y', 35.6, 1.4, M.steel), IN.x, J.mouth - 4, J.off));
-    g.add(tube([[-222, 87, 376], [-252, 84, 400], [-268, 81, 444], [-268, 80, 502]], 29, M.hose, { cap: false }));
+    g.add(tube([[-216, 87, 372], [-246, 85, 390], [-270, 82, 414], [-272, 80, 440], [-272, 80, 502]], 29, M.hose, { cap: false, radial: 24 }));   // turns in early to pass outside the fan ring
     // plug-in couplings with seal ring and wire retaining clip (ETKA 145-085: seal 57.85 / 58.05 mm, clip SCA52)
-    for (const [x, y, z, ry] of [[-58, 90, 340, 1.5], [-218, 87, 376, 1.05], [-268, 80, 480, 0]]) {
+    for (const [x, y, z, ry] of [[-58, 90, 340, 1.5], [-212, 87, 372, 1.05], [-272, 80, 480, 0]]) {
       const c = new THREE.Group();
       c.add(cyl('z', 34, 26, M.plastic, 28));
       const clip = mesh(new THREE.TorusGeometry(35.6, 1.4, 6, 28, Math.PI * 1.55), M.steel);
@@ -389,11 +409,11 @@ export function buildAncillaries(A, anim) {
   // ───────────────────────── Oxidising catalytic converter ─────────────────────────
   const CX = TX + 154;
   A.part('catalyst', { explode: [80, -40, -420], anchor: [CX, 40, TZ - 54] }, (g) => {
-    g.add(tube([[TX + 102, TY, TZ], [TX + 128, TY - 2, TZ], [CX - 4, TY - 24, TZ + 3], [CX, TY - 52, TZ + 4]], 30, M.stainless, { cap: false }));
-    g.add(put(cyl('x', 38, 5, M.exhaustDark, 28), TX + 105, TY, TZ));
-    g.add(put(latheY([[26, -72], [26, -54], [56, -24], [56, 104], [31, 136], [31, 144]], M.stainless, 40), CX, 0, TZ + 4));
-    for (const y of [0, 86]) g.add(put(torus('y', 56.5, 2, M.stainless), CX, y, TZ + 4));
-    g.add(put(cyl('y', 38, 5, M.exhaustDark, 28), CX, -72, TZ + 4));
+    g.add(tube([[TX + 102, TY, TZ], [TX + 128, TY - 2, TZ], [CX - 4, TY - 24, TZ + 3], [CX, TY - 52, TZ + 4]], 30, M.stainless, { cap: false, radial: 24 }));
+    g.add(put(cyl('x', 38, 5, M.exhaustDark, 36), TX + 105, TY, TZ));
+    g.add(put(latheY([[26, -72], [26, -54], [30, -46], [52, -28], [56, -22], [56, 102], [53, 108], [34, 132], [31, 137], [31, 144]], M.stainless, 48), CX, 0, TZ + 4));   // shell with rolled-in cones
+    for (const y of [-16, 0, 86, 98]) g.add(put(torus('y', 56.5, 2, M.stainless), CX, y, TZ + 4));   // stiffening beads at the brick ends
+    g.add(put(cyl('y', 38, 5, M.exhaustDark, 36), CX, -72, TZ + 4));
   });
 
   // ───────────────────────── Switchable EGR cooler ─────────────────────────

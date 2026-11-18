@@ -274,7 +274,7 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
     ], M.alu, 56));
     t.add(put(torus('x', 45, 17, M.alu), -76, 0, 0));                                       // volute
     // outlet: leaves the volute tangentially, turns down and back to the pressure hose
-    t.add(tube([[-74, -14, -48], [-66, -38, -76], [-42, -67, -99]], 22, M.alu, { cap: false }));
+    t.add(tube([[-74, -14, -48], [-66, -38, -76], [-42, -67, -99]], 22, M.alu, { cap: false, radial: 24 }));
     const lip = torus('y', 23, 3, M.alu);
     lip.position.set(-42, -67, -99); lip.rotation.set(-0.6, 0, -0.5);
     t.add(lip);

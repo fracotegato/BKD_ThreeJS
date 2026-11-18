@@ -17,6 +17,18 @@ const state = {
   isolate: true, spread: 1, running: false, rpm: 30,
   tab: 'overview', partTab: 'overview', query: '',
 };
+// Phone layout (see style.css, "phone layout"): html.phone is set at 760 px width and below and on short landscape screens.
+// Wider windows never get the class and every phone branch below is skipped, so the desktop page is unchanged.
+const root = document.documentElement;
+const phoneMQ = matchMedia('(max-width: 760px), (max-height: 500px) and (orientation: landscape)');
+const landMQ = matchMedia('(max-height: 500px) and (orientation: landscape)');
+// sheet: which bottom-navigation sheet is open (parts | apart | view | run), one at a time. free: the canvas area nothing covers.
+const ui = { phone: phoneMQ.matches, land: phoneMQ.matches && landMQ.matches, sheet: null, free: null };
+// view offset (px) and zoom that keep the model centred and fitted in the free area; eased towards the t* values in the frame loop
+const view3 = { x: 0, y: 0, z: 1, tx: 0, ty: 0, tz: 1, snap: true };
+root.classList.toggle('phone', ui.phone);
+root.classList.toggle('land', ui.land);
+if (ui.phone) state.tab = 'parts';
 // Assembly exploded views: one at a time. extra = neighbours kept solid, skip = parts left out of the camera framing.
 const VIEWS = {
   // lift raises the whole model so that parts dropping out of the bottom stay above the floor
@@ -192,12 +204,56 @@ let fly = null;
 const HOME_DIR = new THREE.Vector3(-0.56, 0.5, 0.66).normalize();
 /** Height the toolbar block covers at the bottom of the canvas (side-panel layout). */
 function bottomHeight() {
+  if (ui.phone) return innerHeight - freeArea().b;
   const b = document.getElementById('bottom');
   return b ? Math.min(innerHeight * 0.45, b.getBoundingClientRect().height + 14) : 0;
+}
+/** Phone layout: the rectangle of the canvas that the top bar, status pill, navigation, open sheet and HUD leave free.
+    Uses offset* (layout boxes), so the sheets' slide-in animation does not disturb it. */
+function freeArea() {
+  const w = innerWidth, h = innerHeight, f = { l: 0, t: 0, r: w, b: h };
+  const shown = (el) => !!el && el.offsetHeight > 0;
+  const brand = $('#brand'), ctx = $('#context'), nav = $('#mnav'), bot = $('#bottom'), tb = $('#toolbar');
+  if (shown(brand)) f.t = brand.offsetTop + brand.offsetHeight;
+  if (shown(ctx)) f.t = Math.max(f.t, ctx.offsetTop + ctx.offsetHeight);
+  if (ui.land) {                                  // rail on the left, sheets docked on the right
+    if (shown(nav)) f.l = nav.offsetWidth;
+    if (shown(panel)) f.r = panel.offsetLeft;
+    if (shown(tb)) f.r = Math.min(f.r, tb.offsetLeft);
+  } else {                                        // navigation at the bottom, sheets above it
+    if (shown(nav)) f.b = nav.offsetTop;
+    if (shown(panel)) f.b = Math.min(f.b, panel.offsetTop);
+  }
+  if (shown(bot)) f.b = Math.min(f.b, bot.offsetTop);   // HUD (+ toolbar sheet in portrait)
+  if (f.r - f.l < 120) { f.l = 0; f.r = w; }
+  if (f.b - f.t < 120) { f.b = Math.max(f.b, Math.min(h, f.t + 120)); f.t = Math.min(f.t, f.b - 120); }
+  return f;
+}
+function applyView() {
+  camera.setViewOffset(innerWidth, innerHeight, view3.x, view3.y, innerWidth, innerHeight);
+  camera.zoom = view3.z;
+  camera.updateProjectionMatrix();
+  labelsDirty = true;
+}
+/** Phone layout: aim the camera at the centre of the free area and scale the picture to it (called whenever a sheet opens or closes). */
+function syncFree() {
+  if (!ui.phone || !innerWidth || !innerHeight) return;
+  const f = (ui.free = freeArea());
+  view3.tx = innerWidth / 2 - (f.l + f.r) / 2;
+  view3.ty = innerHeight / 2 - (f.t + f.b) / 2;
+  // the fit is for the bounding sphere, which no view of the model fills: use a little more of a small screen
+  view3.tz = THREE.MathUtils.clamp((Math.min(f.r - f.l, f.b - f.t) * 1.08) / innerHeight, 0.15, 1.08);
+  if (view3.snap) {
+    view3.snap = false;
+    view3.x = view3.tx; view3.y = view3.ty; view3.z = view3.tz;
+    applyView();
+  }
 }
 function fitDistance(radius) {
   // fit a sphere into the part of the canvas the info panel leaves free
   if (!innerWidth || !innerHeight) return radius * 3.4;      // page opened in a hidden tab: no layout yet
+  // phone: fit to the full canvas height; camera.zoom (syncFree) then scales that down to whatever area is free right now
+  if (ui.phone) return radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2));
   const r = panel.getBoundingClientRect();
   const side = r.height > innerHeight * 0.7;
   const freeW = side ? r.left : innerWidth, freeH = side ? innerHeight - bottomHeight() : r.top;
@@ -247,6 +303,17 @@ function updateContext() {
   if (view) { what = `<b>${VIEW_NAMES[view]}</b> taken apart`; n = Object.values(parts).filter((g) => inView(g, view)).length; }
   else if (state.system) { what = `<b>${SYSTEMS[state.system].name}</b>`; n = Object.keys(parts).filter((id) => PARTS[id].sys === state.system).length; }
   else if (state.selected) what = `<b>${PARTS[state.selected].name}</b> selected`;
+  if (ui.phone) {
+    // compact pill under the top bar; a selected part alone is already named by its sheet, so the pill only covers assemblies and systems
+    const name = view ? VIEW_NAMES[view] : state.system ? SYSTEMS[state.system].name : '';
+    const sub = view ? `${n} parts · taken apart` : `${n} parts · rest ${state.isolate ? 'hidden' : 'ghosted'}`;
+    el.classList.toggle('idle', !name);
+    el.innerHTML = name ? `<span class="dot"></span><span class="m-what"><b>${name}</b><small>${sub}</small></span><button class="primary" data-ctx="reset">Show whole engine</button>` : '';
+    if (name) root.dataset.ctx = '1'; else delete root.dataset.ctx;
+    syncNav();
+    syncFree();
+    return;
+  }
   el.classList.toggle('idle', !what);
   el.innerHTML = what
     ? `<span class="dot"></span><span>${what}${n ? ` · ${n} parts` : ''}${view || state.system ? (state.isolate ? ' · everything else hidden' : ' · everything else ghosted') : ''}</span><button class="primary" data-ctx="reset">Show whole engine</button>`
@@ -290,14 +357,22 @@ function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  const r = panel.getBoundingClientRect();
-  const side = r.height > h * 0.7;
-  camera.setViewOffset(w, h, side ? (w - r.left) / 2 : 0, side ? bottomHeight() / 2 : (h - r.top) / 2, w, h);   // centre the model in the area the panel and toolbar leave free
+  if (ui.phone) {
+    view3.snap = true;      // no easing across a resize / rotation
+    syncFree();             // centre and scale the model in the area the bars and sheets leave free
+  } else {
+    camera.zoom = 1;
+    const r = panel.getBoundingClientRect();
+    const side = r.height > h * 0.7;
+    camera.setViewOffset(w, h, side ? (w - r.left) / 2 : 0, side ? bottomHeight() / 2 : (h - r.top) / 2, w, h);   // centre the model in the area the panel and toolbar leave free
+  }
   camera.updateProjectionMatrix();
   labelsDirty = true;
 }
-new ResizeObserver(() => resize()).observe(document.getElementById('bottom'));
-addEventListener('resize', resize);
+// phone: a sheet opening must not resize (and so clear) the canvas, it only moves the free area
+new ResizeObserver(() => (ui.phone ? syncFree() : resize())).observe(document.getElementById('bottom'));
+// a resize or rotation can cross the phone / desktop boundary before the media-query listeners report it
+addEventListener('resize', () => (phoneMQ.matches !== ui.phone || (phoneMQ.matches && landMQ.matches) !== ui.land ? setMode() : resize()));
 
 // ───────────────────────── labels ─────────────────────────
 const labelLayer = $('#labels');
@@ -383,12 +458,23 @@ function updateLabels() {
   // declutter: nearer labels keep their text, overlapping ones collapse to a dot
   const placed = [];
   const order = labels.filter((l) => l.shown).sort((a, b) => (b.id === state.selected) - (a.id === state.selected) || a.depth - b.depth);
+  // phone: only the nearest few labels keep their text, and only where it fits in the free area; the rest are dots until tapped
+  const few = ui.phone && ui.free, lim = few && Math.min(few.r - few.l, few.b - few.t) < 280 ? 3 : 5, hh = ui.phone ? 15 : 12;
+  let texts = 0;
   for (const l of order) {
     const occ = l.occ && l.id !== state.selected;
-    const r = [l.x - 8, l.y - 12, l.x + l.w, l.y + 12];
+    let r = [l.x - 8, l.y - hh, l.x + l.w, l.y + hh];
+    const flip = few && r[2] > few.r - 4 && l.x - l.w > few.l;      // no room on the right: put the text left of its dot
+    if (flip) r = [l.x - l.w, l.y - hh, l.x + 8, l.y + hh];
     const clash = placed.some((p) => r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]);
-    const mini = !occ && clash && l.id !== state.selected;
-    if (!occ && !mini) placed.push(r);
+    let mini = !occ && clash && l.id !== state.selected;
+    if (few && !occ && !mini && l.id !== state.selected) {
+      mini = texts >= lim || r[2] > few.r - 4 || r[0] < few.l || r[1] < few.t + 2 || r[3] > few.b - 2;
+    }
+    l.mini = mini;
+    l.flip = flip;
+    if (ui.phone) l.el.classList.toggle('flip', flip && !mini && !occ);
+    if (!occ && !mini) { placed.push(r); texts++; }
     l.el.classList.toggle('occ', occ);
     l.el.classList.toggle('mini', mini);
     l.el.classList.toggle('sel', l.id === state.selected);
@@ -442,13 +528,28 @@ canvas.addEventListener('pointerup', (e) => {
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
   const b = down.b;
   down = null;
-  if (moved > 5 || b !== 0) return;
+  if (moved > (e.pointerType === 'touch' ? 9 : 5) || b !== 0) return;
+  if (ui.phone && ui.sheet) return setSheet(null);          // a tap on the model closes the open sheet
+  const l = ui.phone && labelAt(e.clientX, e.clientY);      // phone: labels do not take pointer events, so resolve taps on them here
+  if (l) return select(l.id);
   const p = pick(e);
   if (p) select(p.id);
   else if (state.selected) select(null);
 });
-canvas.addEventListener('pointermove', (e) => { if (!down) hoverQueued = e; });
+canvas.addEventListener('pointercancel', () => { down = null; });
+canvas.addEventListener('pointermove', (e) => { if (!down && e.pointerType !== 'touch') hoverQueued = e; });   // no hover (and no tooltip) from a finger
 canvas.addEventListener('pointerleave', () => { hoverQueued = null; setHover(null); tip.hidden = true; });
+/** Phone: the label under a tap. A text label counts over its whole box, a dot within a finger-sized radius. */
+function labelAt(x, y) {
+  let best = null, bd = 22;
+  for (const l of labels) {
+    if (!l.shown || (l.occ && l.id !== state.selected)) continue;
+    if (!l.mini && x > l.x - (l.flip ? l.w : 12) && x < l.x + (l.flip ? 12 : l.w) && Math.abs(y - l.y) < 18) return l;
+    const d = Math.hypot(x - l.x, y - l.y);
+    if (d < bd) { bd = d; best = l; }
+  }
+  return best;
+}
 function setHover(id) {
   if (state.hover === id) return;
   state.hover = id;
@@ -472,6 +573,7 @@ function processHover() {
 
 // ───────────────────────── selection + panel ─────────────────────────
 function select(id, { focus = true } = {}) {
+  if (ui.phone && id) ui.sheet = null;      // phone: a selected part opens as a small "peek" sheet so the model stays in view
   state.selected = id;
   state.hover = null;
   if (id) state.partTab = 'overview';
@@ -499,6 +601,12 @@ function renderSystems() {
     const n = Object.values(PARTS).filter((p) => p.sys === k).length;
     return `<button data-sys="${k}" class="${state.system === k ? 'on' : ''}" style="--c:${s.color}" title="${s.name}" aria-pressed="${state.system === k}"><i></i><span>${s.name}</span><em>${n}</em></button>`;
   }).join('');
+  revealSystem();
+}
+/** Phone: the system chips are one scrolling strip, keep the chosen one in sight. */
+function revealSystem() {
+  const on = ui.phone && $('.on', sysNav);
+  if (on && sysNav.clientWidth) sysNav.scrollLeft = on.offsetLeft - (sysNav.clientWidth - on.offsetWidth) / 2;
 }
 sysNav.addEventListener('click', (e) => {
   const b = e.target.closest('[data-sys]');
@@ -520,8 +628,66 @@ function partsListHTML() {
 }
 const arrow = '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
 
+// ───────────────────────── phone: navigation + sheets ─────────────────────────
+const mnav = $('#mnav');
+/** What the info panel is on a phone: '' hidden, 'peek' (name + one line of a selected part) or 'full' (the Parts sheet). */
+const panelMode = () => (!ui.phone ? '' : ui.sheet === 'parts' ? 'full' : ui.sheet ? '' : state.selected ? 'peek' : '');
+function syncNav() {
+  if (!ui.phone) return;
+  const dot = { parts: !!state.system, apart: !!activeView() || state.explodeTarget > 0.02, view: false, run: state.running };
+  for (const b of mnav.children) {
+    const on = b.dataset.nav === ui.sheet;
+    b.classList.toggle('on', on);
+    b.classList.toggle('dot', dot[b.dataset.nav] && !on);
+    b.setAttribute('aria-expanded', on);
+  }
+}
+/** Mirror the layout state on <html> for the stylesheet, then re-aim the camera at what is left of the canvas. */
+function applyUI() {
+  root.classList.toggle('phone', ui.phone);
+  root.classList.toggle('land', ui.land);
+  if (!ui.phone) {
+    for (const k of ['sheet', 'panel', 'sel', 'ctx', 'kb']) delete root.dataset[k];
+    return;
+  }
+  const mode = panelMode();
+  root.dataset.sheet = ui.sheet || '';
+  root.dataset.panel = mode;
+  if (state.selected) root.dataset.sel = '1'; else delete root.dataset.sel;
+  if (mode !== 'full' || state.selected || !document.activeElement?.matches?.('.search')) delete root.dataset.kb;
+  const exp = $('.m-exp', panel);
+  if (exp) exp.setAttribute('aria-label', mode === 'full' ? 'Collapse details' : 'Show details');
+  revealSystem();
+  syncNav();
+  syncFree();
+}
+function setSheet(name) {
+  ui.sheet = name && ui.sheet !== name ? name : null;
+  applyUI();
+}
+function setMode() {
+  ui.phone = phoneMQ.matches;
+  ui.land = ui.phone && landMQ.matches;
+  if (!ui.phone) ui.sheet = null;
+  for (const l of labels) { l.w = 0; l.flip = false; l.el.classList.remove('mini', 'occ', 'flip'); }   // label text size differs, measure again
+  applyUI();
+  updateContext();
+  renderPanel();
+  resize();
+}
+phoneMQ.addEventListener('change', setMode);
+landMQ.addEventListener('change', setMode);
+mnav.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-nav]');
+  if (b) setSheet(b.dataset.nav);
+});
+$('#mhome').addEventListener('click', () => goHome());
+const chevron = '<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>';
+const cross = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
 function renderPanel() {
-  const id = state.selected;
+  const id = state.selected, ph = ui.phone;
+  const grab = ph ? '<button class="m-grab" data-m="toggle" aria-label="Expand or collapse this sheet"><i></i></button>' : '';
   if (id) {
     const p = PARTS[id], s = SYSTEMS[p.sys], sz = parts[id].userData.size;
     const tabs = [['overview', 'Overview'], ['specs', 'Specifications'], ['links', `Connections · ${p.links.length}`]];
@@ -538,21 +704,26 @@ function renderPanel() {
         return `<button data-part="${t}" style="--c:${SYSTEMS[tp.sys].color}"><i></i><span>${rel}</span><b>${tp.name}</b>${arrow}</button>`;
       }).join('')}</div>`;
     }
+    // phone: the same sheet serves as the peek (name + one line, expand / close buttons) and, expanded, as the full details
+    const peek = ph ? `<p class="m-line">${p.desc}</p>
+        <div class="m-actions"><button class="m-exp" data-m="toggle" aria-label="Show details">${chevron}</button><button data-m="close" aria-label="Close and deselect">${cross}</button></div>` : '';
     panel.innerHTML = `
-      <div class="head" style="--c:${s.color}">
+      <div class="head" style="--c:${s.color}">${grab}
         <button class="back" data-back>‹ All parts</button>
         <div class="kicker"><i></i>${s.name}</div>
         <h1>${p.name}</h1>
-        ${p.code ? `<span class="codechip">${p.code}</span>` : ''}
+        ${p.code ? `<span class="codechip">${p.code}</span>` : ''}${peek}
       </div>
       <div class="tabs">${tabs.map(([k, t]) => `<button data-ptab="${k}" class="${state.partTab === k ? 'on' : ''}">${t}</button>`).join('')}</div>
       <div class="body">${body}</div>`;
+    if (ph) applyUI();
     return;
   }
   const tabs = [['overview', 'Overview'], ['data', 'Technical data'], ['parts', `Parts · ${Object.keys(PARTS).length}`]];
+  if (ph) tabs.unshift(tabs.pop());       // phone: this is the "Parts" sheet, so the list comes first
   let body = '';
   if (state.tab === 'overview') {
-    body = `<p>${ENGINE.intro}</p>
+    body = `${ph ? '<div class="kicker"><i></i>Volkswagen self-study programme 316</div><h1 style="margin-bottom:12px">The 2.0 ltr. TDI engine</h1>' : ''}<p>${ENGINE.intro}</p>
       <div class="stats">
         <div class="stat"><b>103<small>kW</small></b><span>at 4000 rpm</span></div>
         <div class="stat"><b>320<small>Nm</small></b><span>1750 – 2500 rpm</span></div>
@@ -560,7 +731,7 @@ function renderPanel() {
         <div class="stat"><b>18 : 1</b><span>compression ratio</span></div>
       </div>
       <div class="env">Model envelope <b>${mm(homeSize.x)} × ${mm(homeSize.z)} × ${mm(homeSize.y)} mm</b> (L × W × H)</div>
-      <div class="note">Click any part or label for its function, data and connections. Use <b>X-ray</b>, <b>Cutaway</b> or <b>Explode</b> to reach the parts inside, and <b>Run</b> to watch the four-stroke cycle.</div>
+      <div class="note">${ph ? 'Tap' : 'Click'} any part or label for its function, data and connections. Use <b>X-ray</b>, <b>Cutaway</b> or <b>Explode</b> to reach the parts inside, and <b>Run</b> to watch the four-stroke cycle.</div>
       <div class="hint" style="margin-top:16px">
         <kbd>Drag</kbd><span>orbit</span><kbd>Scroll</kbd><span>zoom</span><kbd>Right-drag</kbd><span>pan</span>
         <kbd>Space</kbd><span>run / stop</span><kbd>X</kbd><span>X-ray</span><kbd>C</kbd><span>cutaway</span>
@@ -573,15 +744,54 @@ function renderPanel() {
     body = `<input class="search" type="search" placeholder="Search parts or codes (e.g. G28)" value="${state.query.replace(/"/g, '&quot;')}" aria-label="Search parts" />
       <div class="plist" id="plist">${partsListHTML()}</div>`;
   }
-  panel.innerHTML = `
-    <div class="head">
+  const head = ph ? `<div class="head m-home">${grab}</div>` : `<div class="head">
       <div class="kicker"><i></i>Volkswagen self-study programme 316</div>
       <h1>The 2.0 ltr. TDI engine</h1>
-    </div>
+    </div>`;
+  panel.innerHTML = `
+    ${head}
     <div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="body">${body}</div>`;
+  if (ph) applyUI();
 }
+// phone: swipe the sheet's header up to expand it, down to collapse or dismiss it
+let swipe = null, swipedAt = 0, kbTimer = 0;
+panel.addEventListener('pointerdown', (e) => {
+  swipe = ui.phone && e.target.closest('.head') && !e.target.closest('.m-actions, .back') ? { y: e.clientY } : null;
+});
+panel.addEventListener('pointercancel', () => { swipe = null; });
+panel.addEventListener('pointerup', (e) => {
+  if (!swipe) return;
+  const dy = e.clientY - swipe.y, mode = panelMode();
+  swipe = null;
+  if (Math.abs(dy) < 28) return;
+  swipedAt = performance.now();
+  if (dy < 0) { if (mode === 'peek') setSheet('parts'); }
+  else if (mode === 'full') setSheet(null);
+  else if (mode === 'peek') select(null);
+});
+// phone: while the part search has the focus the sheet takes the full height (the on-screen keyboard covers the lower half)
+panel.addEventListener('focusin', (e) => {
+  if (!ui.phone || ui.land || !e.target.matches('.search')) return;
+  clearTimeout(kbTimer);
+  root.dataset.kb = '1';
+  syncFree();
+});
+panel.addEventListener('focusout', (e) => {
+  if (!e.target.matches('.search')) return;
+  clearTimeout(kbTimer);
+  kbTimer = setTimeout(() => { delete root.dataset.kb; syncFree(); }, 250);   // after the tap that took the focus has landed
+});
+if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+  if (ui.phone) root.style.setProperty('--kb', `${Math.max(0, Math.round(innerHeight - visualViewport.height))}px`);
+});
 panel.addEventListener('click', (e) => {
+  if (ui.phone) {
+    if (performance.now() - swipedAt < 400) return;
+    const m = e.target.closest('[data-m]');
+    if (m && m.dataset.m === 'close') { ui.sheet = null; return select(null); }
+    if (m || (panelMode() === 'peek' && e.target.closest('.head'))) return setSheet('parts');
+  }
   const t = e.target.closest('[data-part],[data-tab],[data-ptab],[data-back]');
   if (!t) return;
   if (t.dataset.part) select(t.dataset.part);
@@ -623,9 +833,11 @@ function setRunning(v) {
   $('.run span', toolbar).textContent = state.running ? 'Stop' : 'Run';
   hud.hidden = !state.running;
   engine.update(theta, state.running);
+  if (ui.phone) { syncNav(); syncFree(); }      // the HUD takes room above the navigation
 }
 toolbar.addEventListener('click', (e) => {
   const b = e.target.closest('button');
+  if (!b && ui.phone && e.target === toolbar && e.clientY - toolbar.getBoundingClientRect().top < 30) return setSheet(null);   // phone: the sheet's grab handle
   if (!b) return;
   if (b.dataset.tg) return setToggle(b.dataset.tg);
   const a = b.dataset.act;
@@ -636,14 +848,14 @@ toolbar.addEventListener('click', (e) => {
   else if (a === 'home') goHome();
   else if (a === 'run') setRunning();
 });
-explodeInput.addEventListener('input', () => { if (activeView()) state.spread = explodeInput.value / 100; else state.explodeTarget = explodeInput.value / 100; });
+explodeInput.addEventListener('input', () => { if (activeView()) state.spread = explodeInput.value / 100; else state.explodeTarget = explodeInput.value / 100; syncNav(); });
 $('#context').addEventListener('click', (e) => { if (e.target.closest('[data-ctx="reset"]')) showAll(); });
 rpmInput.addEventListener('input', () => { state.rpm = +rpmInput.value; rpmVal.textContent = `${state.rpm} rpm`; });
 
 addEventListener('keydown', (e) => {
-  if (e.target.matches('input[type="search"]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.matches?.('input[type="search"]') || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
-  if (k === 'escape') { if (state.selected) select(null); else if (activeView()) setToggle(activeView(), false); else if (state.system) setSystem(state.system); }
+  if (k === 'escape') { if (ui.phone && ui.sheet) setSheet(null); else if (state.selected) select(null); else if (activeView()) setToggle(activeView(), false); else if (state.system) setSystem(state.system); }
   else if (k === ' ') { e.preventDefault(); setRunning(); }
   else if (k === 'x') setToggle('xray');
   else if (k === 'c') setToggle('cut');
@@ -712,6 +924,13 @@ function frame(now) {
     controls.target.lerpVectors(fly.q0, fly.q1, e);
     if (k >= 1) fly = null;
   }
+  if (ui.phone && (Math.abs(view3.x - view3.tx) > 0.25 || Math.abs(view3.y - view3.ty) > 0.25 || Math.abs(view3.z - view3.tz) > 0.0005)) {
+    // a sheet opened or closed: glide the model to the centre of the area that is free now
+    const k = Math.min(1, dt * 10);
+    view3.x += (view3.tx - view3.x) * k; view3.y += (view3.ty - view3.y) * k; view3.z += (view3.tz - view3.z) * k;
+    if (Math.abs(view3.x - view3.tx) < 0.5 && Math.abs(view3.y - view3.ty) < 0.5 && Math.abs(view3.z - view3.tz) < 0.002) { view3.x = view3.tx; view3.y = view3.ty; view3.z = view3.tz; }
+    applyView();
+  }
   controls.update();
   processHover();
   renderer.render(scene, camera);
@@ -737,4 +956,4 @@ requestAnimationFrame((t) => {
   setTimeout(() => loader?.remove(), 900);
 });
 
-window.__bkd = { state, engine, parts, camera, controls, select, setToggle, setSystem, setRunning, goHome, THREE };
+window.__bkd = { state, engine, parts, camera, controls, select, setToggle, setSystem, setRunning, goHome, THREE, ui, setSheet };

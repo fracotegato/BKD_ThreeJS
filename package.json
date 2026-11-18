@@ -6,7 +6,9 @@
     "dev": "vite --port 5173 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "check": "node scripts/smoke.mjs && node scripts/check-data.mjs",
+    "overlap": "node scripts/overlap.mjs 0.02"
   },
   "keywords": [],
   "author": "",

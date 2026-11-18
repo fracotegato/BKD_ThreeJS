@@ -93,7 +93,7 @@ export const PARTS = {
   crankPulley: {
     name: 'Vibration damper / belt pulley', short: 'Vibration damper', sys: 'aux', label: 'always',
     desc: 'Rubber-damped pulley on the crankshaft nose. It calms torsional vibration and drives the alternator and A/C compressor through the poly-V belt.',
-    specs: [['Diameter', '≈ 152 mm'], ['Belt', 'Poly-V, 6 ribs']],
+    specs: [['Diameter', '≈ 142 mm over the ribs (140–143 mm in parts listings)'], ['Width', '41–42 mm (parts listings)'], ['Belt', 'Poly-V, 6 ribs']],
     links: [['crankshaft', 'bolted to sprocket'], ['auxBelt', 'drives']],
   },
 
@@ -137,7 +137,7 @@ export const PARTS = {
   timingBelt: {
     name: 'Toothed belt drive', sys: 'valve', label: 'inner',
     desc: 'The crankshaft drives both camshafts and the coolant pump with one toothed belt. The belt is 30 mm wide, with a polyamide cord-support backing that reduces edge wear, a rubber body, glass-fibre ply cords and a polyamide facing. A damped tensioner and idler rollers guide it. The two camshaft sprockets are large and sit almost touching; roller positions in this model are schematic.',
-    specs: [['Width', '30 mm (SSP 316)'], ['Teeth', '141'], ['Pitch', '9.525 mm → 1343 mm long'], ['Ratio crank : cam', '1 : 2 (26 / 52 teeth, modelled)']],
+    specs: [['Width', '30 mm (SSP 316, belt maker’s catalogue)'], ['Teeth', '141'], ['Pitch', '9.525 mm → 1343 mm long'], ['Ratio crank : cam', '1 : 2 (26 / 52 teeth, modelled)']],
     links: [['crankshaft', 'driven by'], ['camIn', 'drives'], ['camEx', 'drives'], ['coolantPump', 'drives'], ['beltGuard', 'enclosed by']],
   },
   beltGuard: {
@@ -242,7 +242,7 @@ export const PARTS = {
   coolantPump: {
     name: 'Coolant pump', sys: 'cool', label: 'inner',
     desc: 'Set into the belt end of the block and driven by the toothed belt along with the camshafts.',
-    specs: [['Drive', 'Toothed belt (SSP 316)'], ['Sprocket', '19 teeth (modelled)']],
+    specs: [['Drive', 'Toothed belt (SSP 316)'], ['Sprocket', '19 teeth (parts listing)'], ['Housing', 'Size estimated (≈)']],
     links: [['timingBelt', 'driven by'], ['block', 'circulates coolant through'], ['thermostat', 'flow regulated by']],
   },
   coolantFlange: {
@@ -262,7 +262,7 @@ export const PARTS = {
   sump: {
     name: 'Oil sump', sys: 'oil', label: 'always',
     desc: 'Ribbed cast-aluminium sump that closes the crankcase and stores the engine oil. It holds the drain plug and the oil level / temperature sender, and its rear face bolts to the gearbox.',
-    specs: [['Material', 'Cast aluminium'], ['Depth', '≈ 100 mm']],
+    specs: [['Material', 'Cast aluminium'], ['Outside size', '430 × 277 × 120 mm (parts listings for 038 103 603 AG)'], ['As drawn', 'Body ≈ 248 mm wide; the 277 mm is taken across the two gearbox lugs'], ['Sender', 'Opening for the oil level / temperature sender']],
     links: [['block', 'bolted to'], ['oilPump', 'houses']],
   },
   oilPump: {
@@ -274,7 +274,7 @@ export const PARTS = {
   oilFilter: {
     name: 'Oil filter module', sys: 'oil', label: 'always',
     desc: 'Aluminium housing bolted to the front of the block towards the gearbox end. The canister stands upright with a black screw cap on top, reached from above next to the EGR pipe; the paper element sits inside. A stacked-plate oil cooler, through which engine coolant flows, hangs underneath. The turbocharger oil feed pipe starts here.',
-    specs: [['Position', 'Front of block, gearbox-end half'], ['Element', 'Paper cartridge under screw cap'], ['Cooler', 'Oil / coolant plate type, below the canister']],
+    specs: [['Position', 'Front of block, gearbox-end half'], ['Element', 'Paper cartridge Ø 71 × 141 mm under the screw cap (filter maker’s catalogue)'], ['Canister', '≈ Ø 88 × 160 mm with cap, drawn round the element'], ['Cooler', 'Oil / coolant plate type, below the canister (size ≈)']],
     links: [['block', 'bolted to'], ['oilPump', 'oil from'], ['turbo', 'oil feed pipe to']],
   },
   dipstick: {
@@ -288,7 +288,7 @@ export const PARTS = {
   glowPlugs: {
     name: 'Glow plugs', sys: 'elec', code: 'Q10 – Q13', label: 'always',
     desc: 'Quick-start glow plugs: slim because four valves leave little room, with a winding combination about a third shorter than usual. They reach 1000 °C in 2 seconds and start safely down to −24 °C. Glow plug control unit J370 switches them with a PWM signal on command from the engine control unit, and monitors each plug. Nominal voltage is 4.4 V – never test them with 12 V.',
-    specs: [['Nominal voltage', '4.4 V (SSP 316)'], ['Heat-up', '1000 °C in 2 s (SSP 316)'], ['Preglow', 'Below 14 °C, ≈ 11 V for max. 2 s'], ['Extended glow', 'Up to 3 min, below 20 °C coolant'], ['Control', 'J370, PWM']],
+    specs: [['Nominal voltage', '4.4 V (SSP 316)'], ['Size', 'M8 × 1 thread, 8 mm hexagon, 118 mm long (parts listing); drawn ≈ 140 mm so the terminal clears the modelled head'], ['Heat-up', '1000 °C in 2 s (SSP 316)'], ['Preglow', 'Below 14 °C, ≈ 11 V for max. 2 s'], ['Extended glow', 'Up to 3 min, below 20 °C coolant'], ['Control', 'J370, PWM']],
     links: [['head', 'screwed into'], ['injectors', 'next to ignition spray of'], ['g62', 'glow time from']],
   },
   g28: {
@@ -320,19 +320,19 @@ export const PARTS = {
   auxBelt: {
     name: 'Poly-V belt and tensioner', sys: 'aux',
     desc: 'One ribbed belt from the crankshaft pulley drives the alternator and A/C compressor; a sprung tensioner keeps it tight. Both units hang on a cast bracket on the front of the block at the belt end.',
-    specs: [['Belt', 'Poly-V, 6 ribs']],
+    specs: [['Belt', 'Poly-V 6PK1050: 6 ribs, 21.4 mm wide, 1050 mm long (belt maker’s catalogue)'], ['Path as modelled', '≈ 1054 mm with the listed pulley diameters']],
     links: [['crankPulley', 'driven by'], ['alternator', 'drives'], ['acCompressor', 'drives']],
   },
   alternator: {
     name: 'Alternator', sys: 'aux', label: 'always',
     desc: 'Three-phase alternator charging the battery and supplying the vehicle electrical system. It sits high on the front of the engine at the belt end, directly below the vacuum reservoir.',
-    specs: [['Output', '≈ 140 A'], ['Body', '≈ Ø 138 mm']],
+    specs: [['Output', '14 V, 140 A (parts listings for 06F 903 023 F)'], ['Length', '≈ 178 mm (177–178 mm in two listings, 201 mm in a third)'], ['Pulley', 'Freewheel pulley Ø 56 × 41 mm, 6 ribs (parts listings)'], ['Body', '≈ Ø 140 mm']],
     links: [['auxBelt', 'driven by']],
   },
   acCompressor: {
     name: 'A/C compressor', sys: 'aux', label: 'always',
     desc: 'Refrigerant compressor for the air conditioning, bolted low on the front of the block under the alternator, level with the crankshaft.',
-    specs: [['Body', '≈ Ø 112 mm']],
+    specs: [['Pulley', 'Ø 110 mm, 6 ribs (parts listings for 1K0 820 803 / 859)'], ['Length', '216 mm overall (parts listing); drawn ≈ 218 mm'], ['Body', '≈ Ø 112 mm']],
     links: [['auxBelt', 'driven by']],
   },
 
@@ -341,7 +341,7 @@ export const PARTS = {
   intercooler: {
     name: 'Charge air cooler (intercooler)', short: 'Charge air cooler', sys: 'air', label: 'always',
     desc: 'Air-to-air cooler in the cooling pack at the front of the car, between the A/C condenser and the radiator. Compressing the intake air in the turbocharger heats it; cooling it again makes it denser, so more oxygen reaches the cylinders. Hot air enters at the bottom of the gearbox-side tank and leaves half-way up the belt-side tank.',
-    specs: [['ETKA', '145-085, part 1K0 145 803 A / S (BKD, AZV)'], ['Core', '≈ 615 × 405 × 32 mm'], ['Tanks', 'Plastic, crimped to an aluminium core'], ['Seals', 'Rubber strips top and bottom']],
+    specs: [['ETKA', '145-085, part 1K0 145 803 A / S (BKD, AZV)'], ['Core', '615 × 406 × 32 mm (cooler maker’s listing for the Golf 2003–2011; a listing for later part numbers gives 625 × 398 × 32)'], ['Tanks', 'Plastic, crimped to an aluminium core'], ['Seals', 'Rubber strips top and bottom']],
     links: [['boostPipe', 'hot air from'], ['chargePipe', 'cooled air to'], ['radiator', 'sits in front of'], ['condenser', 'sits behind'], ['fans', 'air drawn through by']],
   },
   boostPipe: {
@@ -371,13 +371,13 @@ export const PARTS = {
   radiator: {
     name: 'Radiator', sys: 'cool', label: 'always',
     desc: 'Cross-flow aluminium radiator with plastic end tanks, last in the cooling pack before the fans. Coolant from the cylinder head enters at the top of the gearbox-side tank and returns from the bottom of the same tank to the thermostat, which only opens this circuit once the engine is warm.',
-    specs: [['ETKA', '121-045 (BKD, AZV)'], ['Core', '≈ 650 × 450 × 34 mm'], ['Connections', 'Both on the gearbox-side tank'], ['Mounting', 'Rubber bushes in the lock carrier']],
+    specs: [['ETKA', '121-045 (BKD, AZV)'], ['Core', '650 × 432 × 32 mm (two radiator listings for the BKD part numbers)'], ['Connections', 'Both on the gearbox-side tank'], ['Mounting', 'Rubber bushes in the lock carrier']],
     links: [['hoseTop', 'hot coolant from'], ['hoseBottom', 'cooled coolant to'], ['fans', 'air drawn through by'], ['intercooler', 'sits behind'], ['expansionTank', 'vents to']],
   },
   fans: {
     name: 'Radiator fans with shroud', short: 'Radiator fans', sys: 'cool', code: 'V7 · V35', label: 'always',
     desc: 'Two electric fans in a plastic shroud bolted to the back of the radiator. They pull air through the condenser, charge air cooler and radiator when the car is slow or the air conditioning needs it. The fan control unit on the shroud switches them in stages.',
-    specs: [['ETKA', '121-090 twin fan ring'], ['Fan diameters', '≈ 360 mm and ≈ 295 mm'], ['Control', 'Fan control unit J293 on the shroud']],
+    specs: [['ETKA', '121-090 twin fan ring'], ['Fan diameters', '360 mm (300 W) and 295 mm (parts listings)'], ['Shroud', '≈ 712 × 444 mm, outline estimated'], ['Control', 'Fan control unit J293 on the shroud']],
     links: [['radiator', 'bolted to'], ['intercooler', 'draws air through'], ['condenser', 'draws air through'], ['hoseBottom', 'switched using G83 in'], ['loom', 'wired through']],
   },
   hoseTop: {
@@ -437,7 +437,7 @@ export const PARTS = {
   starter: {
     name: 'Starter', sys: 'elec', label: 'always',
     desc: 'Electric motor flanged to the gearbox bell housing on the intake side. When the key is turned, the solenoid switch pushes the pinion into the ring gear on the flywheel and closes the main contact, and the motor cranks the engine.',
-    specs: [['Position', 'Bell housing, front'], ['Body', '≈ Ø 76 × 120 mm'], ['Terminals', '30 (battery), 50 (start signal)']],
+    specs: [['Position', 'Bell housing, front'], ['Rating', '12 V, 2.0 kW (parts listing for 02Z 911 023 F; two other listings say 1.7 kW)'], ['Length', '233 mm (233–234 mm in two listings)'], ['Flange', 'Ø 76 mm register'], ['Pinion', '10 teeth (parts listing)'], ['Motor and switch', '≈ Ø 76 mm and ≈ Ø 52 mm'], ['Terminals', '30 (battery), 50 (start signal)']],
     links: [['flywheel', 'pinion meshes with ring gear of'], ['gearbox', 'bolted to'], ['powerCables', 'supplied through'], ['loom', 'start signal from']],
   },
   powerCables: {
@@ -455,7 +455,7 @@ export const PARTS = {
   condenser: {
     name: 'A/C condenser', sys: 'aux', label: 'always',
     desc: 'First cooler in the pack, directly behind the bumper. Hot refrigerant gas from the compressor gives up its heat here and becomes liquid; the receiver-dryer stands at its side. The thinner pipe is the high-pressure line from the compressor, the thicker one the suction line returning from the evaporator behind the bulkhead.',
-    specs: [['Core', '≈ 590 × 380 × 16 mm'], ['Refrigerant', 'R134a'], ['Lines modelled', 'High-pressure and suction line']],
+    specs: [['Core', '540 × 388 × 16 mm (two parts listings give 535–540 × 388)'], ['Overall', '≈ 580 × 400 mm over the header tubes, the size a third listing gives'], ['Refrigerant', 'R134a'], ['Lines modelled', 'High-pressure and suction line']],
     links: [['acCompressor', 'gas from'], ['intercooler', 'sits in front of'], ['fans', 'air drawn through by']],
   },
   frontPipe: {

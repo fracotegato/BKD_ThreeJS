@@ -5,7 +5,7 @@
 // Axes as in helpers.js; the front of the car is +Z, the gearbox (car's left side) is +X.
 import * as THREE from 'three';
 import { E } from './engine-core.js';
-import { M, mesh, put, cyl, hex, box, sphere, torus, bar, rod, tube, latheX, latheY, extrudeZ, rrect, circ, coreMaterial } from './helpers.js';
+import { M, mesh, put, cyl, hex, box, sphere, torus, bar, rod, tube, latheX, latheY, extrudeX, extrudeZ, rrect, circ, poly, gearShape, coreMaterial } from './helpers.js';
 
 const TAU = Math.PI * 2;
 const Z = new THREE.Vector3(0, 0, 1);
@@ -81,21 +81,22 @@ export function buildPeriphery(A) {
   const P = (id, opts, fn) => { const g = A.part(id, opts, fn); g.userData.periph = true; return g; };
 
   const RX = 120;                                             // car centre line; the engine sits towards the belt side
-  const IC = { w: 615, h: 405, t: 32, z: 512, y: 84 };        // charge air cooler core
-  const RAD = { w: 650, h: 450, t: 34, z: 472, y: 95 };       // radiator core
-  const CO = { w: 590, h: 380, t: 16, z: 540, y: 96 };        // A/C condenser core
+  // Core sizes from aftermarket radiator catalogues for the Golf V 2.0 TDI (see the part data for the listings).
+  const IC = { w: 615, h: 405, t: 32, z: 512, y: 84 };        // charge air cooler core, listed 615 × 406 × 32
+  const RAD = { w: 650, h: 432, t: 32, z: 472, y: 95 };       // radiator core, listed 650 × 432 × 32
+  const CO = { w: 540, h: 388, t: 16, z: 540, y: 96 };        // A/C condenser core, listed 540 × 388 × 16 (580 × 400 over the header tubes)
   const TOP = HY + 28;                                        // coolant flange outlet height
 
   // ───────────────────────── Charge air cooler (intercooler) ─────────────────────────
   P('intercooler', { cut: true, casing: true, explode: [0, 0, 620], anchor: [RX + 150, IC.y + 150, IC.z + 18] }, (g) => {
     g.add(put(box(IC.w, IC.h, IC.t, coreMaterial('icCore', 0xb4b9bf, IC.w, IC.h), 0), RX, IC.y, IC.z));
     // plastic end tanks; belt side takes the outlet half-way up, gearbox side the inlet at the bottom
-    g.add(put(box(66, IC.h + 14, 44, M.plastic, 12), RX - IC.w / 2 - 32, IC.y, IC.z - 2));
-    g.add(put(box(62, IC.h + 14, 44, M.plastic, 12), RX + IC.w / 2 + 30, IC.y, IC.z - 2));
-    for (let k = 0; k < 6; k++) for (const s of [-1, 1]) g.add(put(box(4, 12, 46, M.plastic, 1), RX + s * (IC.w / 2 + 10 + (k % 3) * 18), IC.y - 150 + k * 60, IC.z - 2));
-    g.add(put(cyl('z', 30, 34, M.plastic, 28), -268, 80, IC.z - 26));                         // outlet to the intake manifold
-    g.add(put(torus('z', 30, 3, M.plastic), -268, 80, IC.z - 42));
-    g.add(put(cyl('x', 30, 30, M.plastic, 28), RX + IC.w / 2 + 66, -85, IC.z - 2));           // inlet from the turbocharger
+    g.add(put(box(66, IC.h + 14, 40, M.plastic, 12), RX - IC.w / 2 - 32, IC.y, IC.z));
+    g.add(put(box(62, IC.h + 14, 40, M.plastic, 12), RX + IC.w / 2 + 30, IC.y, IC.z));
+    for (let k = 0; k < 6; k++) for (const s of [-1, 1]) g.add(put(box(4, 12, 40, M.plastic, 1), RX + s * (IC.w / 2 + 10 + (k % 3) * 18), IC.y - 150 + k * 60, IC.z + 1));
+    g.add(put(cyl('z', 30, 34, M.plastic, 36), -272, 80, IC.z - 26));                         // outlet to the intake manifold
+    g.add(put(torus('z', 30, 3, M.plastic), -272, 80, IC.z - 42));
+    g.add(put(cyl('x', 30, 30, M.plastic, 36), RX + IC.w / 2 + 66, -85, IC.z - 2));           // inlet from the turbocharger
     g.add(put(torus('x', 30, 3, M.plastic), RX + IC.w / 2 + 80, -85, IC.z - 2));
     for (const s of [-1, 1]) g.add(put(box(IC.w + 96, 8, 26, M.rubber, 3), RX, IC.y + s * (IC.h / 2 + 8), IC.z));   // sealing strips
   });
@@ -105,54 +106,57 @@ export function buildPeriphery(A) {
     const a = [[-104, 128, -284], [-84, 110, -296], [-30, 104, -300], [40, 104, -299]];
     const b = [[40, 104, -299], [150, 106, -298], [330, 135, -292], [470, 200, -262], [574, 236, -190], [608, 250, -60], [608, 252, 130], [584, 240, 330], [566, 170, 440], [562, 60, 470]];
     const c = [[562, 60, 470], [560, -30, 490], [540, -80, 505], [RX + IC.w / 2 + 80, -85, IC.z - 2]];
-    g.add(tube(a, 28, M.hose, { cap: false, radial: 18 }), tube(b, 26, M.plastic, { cap: false, seg: 160, radial: 18 }), tube(c, 28, M.hose, { cap: false, radial: 18 }));
+    g.add(tube(a, 28, M.hose, { cap: false, radial: 24 }), tube(b, 26, M.plastic, { cap: false, seg: 160, radial: 24 }), tube(c, 28, M.hose, { cap: false, radial: 24 }));
     plugCoupling(g, a[0], a[1], 28); plugCoupling(g, a.at(-1), a.at(-2), 28);                 // turbocharger, pipe
     plugCoupling(g, c[0], c[1], 28); plugCoupling(g, c.at(-1), c.at(-2), 28);                 // pipe, charge air cooler
     // pulsation damper on the rising section
-    g.add(put(sphere(36, M.plastic, 0.8), 604, 150, 446));
+    g.add(put(sphere(36, M.plastic, 0.8, 32, 20), 604, 150, 446));
     g.add(put(cyl('x', 13, 22, M.plastic, 16), 586, 150, 446));
     for (const p of [[608, 250, -60], [574, 205, 395]]) g.add(put(box(34, 8, 22, M.steelDark, 2), p[0], p[1] + 30, p[2]));   // brackets
   });
 
   // ───────────────────────── Air filter housing ─────────────────────────
   // Front left of the engine bay (seen from the front: right-hand front), ahead of the battery.
-  const AB = { x: 415, y: 370, z: 165, sx: 260, sy: 140, sz: 180 };
+  // Sized round its filter element, 345 × 136 × 70 mm in the filter maker's catalogue, which lies flat under the
+  // lid with its long side across the car. The outside size of the housing itself is an estimate (≈).
+  const AB = { x: 471, y: 370, z: 165, sx: 372, sy: 130, sz: 180 };
   const MAFX = 308;                                              // axis of the air mass meter and the hose behind it
   P('airbox', { casing: true, explode: [380, 220, 200], anchor: [AB.x + 40, AB.y + 78, AB.z + 40] }, (g) => {
-    g.add(put(box(AB.sx, 80, AB.sz, M.plastic, 16), AB.x, AB.y - 30, AB.z));                  // lower half
+    g.add(put(box(AB.sx, 70, AB.sz, M.plastic, 16), AB.x, AB.y - 25, AB.z));                  // lower half
     g.add(put(box(AB.sx + 6, 56, AB.sz + 6, M.plastic, 18), AB.x, AB.y + 42, AB.z));          // lid
     g.add(put(box(AB.sx + 12, 8, AB.sz + 12, M.plasticGrey, 3), AB.x, AB.y + 12, AB.z));      // joint
-    for (let k = 0; k < 7; k++) g.add(put(box(12, 5, AB.sz - 50, M.plastic, 2), AB.x - 30 + k * 26, AB.y + 71, AB.z));   // lid ribs
-    g.add(put(box(54, 3, 54, M.plasticGrey, 3), AB.x - 96, AB.y + 71, AB.z - 30));            // moulded panel on the lid
-    for (const [dx, dz] of [[-116, -78], [116, -78], [-116, 78], [116, 78], [0, 82]]) g.add(put(hex('y', 5, 6, M.steelDark), AB.x + dx, AB.y + 71, AB.z + dz));   // lid screws
-    g.add(put(box(84, 84, 30, M.plastic, 10), MAFX, 385, AB.z - AB.sz / 2 - 6));              // outlet neck towards the air mass meter
+    g.add(put(box(345, 70, 136, M.tank, 4), AB.x, AB.y + 12, AB.z));                          // paper filter element inside (visible in X-ray)
+    for (let k = 0; k < 10; k++) g.add(put(box(12, 5, AB.sz - 50, M.plastic, 2), AB.x - 60 + k * 26, AB.y + 71, AB.z));   // lid ribs
+    g.add(put(box(54, 3, 54, M.plasticGrey, 3), AB.x - AB.sx / 2 + 56, AB.y + 71, AB.z - 30));   // moulded panel on the lid
+    for (const [dx, dz] of [[-172, -78], [172, -78], [-172, 78], [172, 78], [0, 82], [0, -82]]) g.add(put(hex('y', 5, 6, M.steelDark), AB.x + dx, AB.y + 71, AB.z + dz));   // lid screws
+    g.add(put(box(92, 92, 30, M.plastic, 10), MAFX, 385, AB.z - AB.sz / 2 - 6));              // outlet neck towards the air mass meter
     // intake duct: wide flat duct from the lock carrier into the front of the housing
     g.add(put(box(230, 46, 62, M.plastic, 12), 262, 372, 306));
     g.add(put(box(210, 30, 4, M.dark), 262, 374, 338));
-    g.add(tube([[300, 368, 290], [316, 360, 270], [330, 352, 252]], 30, M.plastic, { cap: false, radial: 18 }));
-    for (const [x, z] of [[AB.x - 100, AB.z - 96], [AB.x + 100, AB.z - 96]]) g.add(put(cyl('y', 9, 20, M.rubber, 14), x, AB.y - 78, z));   // rubber mounts
+    g.add(tube([[300, 368, 290], [316, 360, 270], [330, 352, 252]], 30, M.plastic, { cap: false, radial: 24 }));
+    for (const [x, z] of [[AB.x - 150, AB.z - 76], [AB.x + 150, AB.z - 76]]) g.add(put(cyl('y', 9, 28, M.rubber, 14), x, AB.y - 74, z));   // rubber mounts
   });
 
   // ───────────────────────── Air mass meter G70 ─────────────────────────
-  P('maf', { explode: [220, 300, 0], anchor: [MAFX, 446, 30] }, (g) => {
-    g.add(put(cyl('z', 37, 70, M.plastic, 32), MAFX, 385, 30));
-    for (const z of [-3, 63]) g.add(put(torus('z', 37.5, 2.6, M.plastic), MAFX, 385, z));
-    g.add(put(box(34, 16, 44, M.plastic, 3), MAFX, 423, 30));
-    plug(g, [MAFX, 435, 16]);
-    for (const [dx, dy] of [[-30, -30], [30, 30]]) g.add(put(hex('z', 4, 5, M.steelDark), MAFX + dx, 385 + dy, 66));   // two screws to the housing
+  P('maf', { explode: [220, 300, 0], anchor: [MAFX, 452, 30] }, (g) => {
+    g.add(put(cyl('z', 40, 70, M.plastic, 40), MAFX, 385, 30));                               // Ø 80 mm hose connections (parts listing)
+    for (const z of [-3, 63]) g.add(put(torus('z', 40.5, 2.6, M.plastic), MAFX, 385, z));
+    g.add(put(box(34, 16, 44, M.plastic, 3), MAFX, 426, 30));
+    plug(g, [MAFX, 438, 16]);
+    for (const [dx, dy] of [[-32, -32], [32, 32]]) g.add(put(hex('z', 4, 5, M.steelDark), MAFX + dx, 385 + dy, 66));   // two screws to the housing
   });
 
   // ───────────────────────── Intake pipe: air mass meter → compressor ─────────────────────────
   P('intakePipe', { explode: [0, 320, -260], anchor: [-60, 420, -240] }, (g) => {
     const prof = [];
-    for (let i = 0; i <= 18; i++) prof.push([i * 5, i % 2 ? 40 : 35.5]);
-    const corr = latheX([[-6, 38], ...prof, [96, 38]], M.rubber, 32);                          // corrugated bellows, runs back along the engine
+    for (let i = 0; i <= 18; i++) prof.push([i * 5, i % 2 ? 43 : 38.5]);
+    const corr = latheX([[-12, 43.5], [-2, 43.5], ...prof, [92, 36.5], [100, 36.5]], M.rubber, 36);   // corrugated bellows over the Ø 80 meter, runs back along the engine
     corr.rotation.y = Math.PI / 2; corr.position.set(MAFX, 385, -4);
     g.add(corr);
-    screwClamp(g, [MAFX, 385, 0], [MAFX, 385, -40], 39);
-    screwClamp(g, [MAFX, 386, -98], [MAFX, 385, -40], 39);
+    screwClamp(g, [MAFX, 385, 8], [MAFX, 385, -40], 43.5, 6);
+    screwClamp(g, [MAFX, 386, -104], [MAFX, 385, -40], 36.5, 4);
     const p = [[MAFX, 386, -96], [292, 390, -150], [250, 396, -200], [170, 398, -224], [60, 392, -236], [-80, 385, -240], [-180, 360, -240], [-232, 300, -228], [-240, 235, -200], [-215, 198, -186], [-176, 195, -185]];
-    g.add(tube(p, 32, M.plastic, { cap: false, seg: 160, radial: 20 }));
+    g.add(tube(p, 32, M.plastic, { cap: false, seg: 160, radial: 28 }));
     screwClamp(g, p.at(-1), p.at(-2), 32, 6);
     g.add(put(sleeve(-9, 9, 30, 36, M.rubber), 0, 0, 0)).children.at(-1).position.set(-186, 195.5, -185);   // connecting piece with O-ring at the compressor
     g.add(put(cyl('y', 9, 26, M.plastic, 14), 40, 426, -238), put(torus('y', 9.6, 1.4, M.plastic), 40, 437, -238));   // crankcase breather connection
@@ -163,28 +167,31 @@ export function buildPeriphery(A) {
   P('radiator', { cut: true, casing: true, explode: [0, 0, 520], anchor: [RX - 200, RAD.y + 190, RAD.z - 16] }, (g) => {
     g.add(put(box(RAD.w, RAD.h, RAD.t, coreMaterial('radCore', 0x7d838a, RAD.w, RAD.h, 0.6), 0), RX, RAD.y, RAD.z));
     for (const s of [-1, 1]) {
-      g.add(put(box(30, RAD.h + 16, 46, M.plastic, 10), RX + s * (RAD.w / 2 + 14), RAD.y, RAD.z));
+      g.add(put(box(30, RAD.h + 16, 40, M.plastic, 10), RX + s * (RAD.w / 2 + 14), RAD.y, RAD.z));   // end tank; meets the charge air cooler tank face to face
       for (const y of [RAD.y + RAD.h / 2 + 14, RAD.y - RAD.h / 2 - 14]) g.add(put(cyl('y', 9, 16, M.rubber, 14), RX + s * (RAD.w / 2 - 40), y, RAD.z));   // mounts
     }
     const tx = RX + RAD.w / 2 + 14;
     for (const y of [285, -95]) {                                                            // both hose stubs on the gearbox-side tank
-      g.add(put(cyl('z', 17, 34, M.plastic, 22), tx, y, RAD.z - 38));
+      g.add(put(cyl('z', 17, 34, M.plastic, 28), tx, y, RAD.z - 38));
       g.add(put(torus('z', 17.5, 2.2, M.plastic), tx, y, RAD.z - 52));
     }
     g.add(put(cyl('z', 5, 16, M.plastic, 10), RX - RAD.w / 2 - 14, 300, RAD.z - 28));         // vent to the expansion tank
   });
 
   // ───────────────────────── Radiator fans V7 / V35 with shroud ─────────────────────────
-  P('fans', { cut: true, casing: true, explode: [0, 0, 380], anchor: [RX + 125, 95, 404] }, (g) => {
-    const fans = [{ x: RX + 132, r: 176 }, { x: RX - 178, r: 142 }];
-    const s = rrect(RX - 322, RAD.y - 222, RX + 322, RAD.y + 222, 18);
+  // Fan diameters 360 mm (300 W) and 295 mm from parts listings. Together they are wider than the radiator core,
+  // so the shroud widens over the end tanks between the two hose stubs; its outline is an estimate (≈).
+  P('fans', { cut: true, casing: true, explode: [0, 0, 380], anchor: [RX + 140, 95, 404] }, (g) => {
+    const fans = [{ x: RX + 152, r: 180 }, { x: RX - 196, r: 147.5 }];
+    const hw = RAD.w / 2 - 3, y0 = RAD.y - RAD.h / 2 - 6, y1 = RAD.y + RAD.h / 2 + 6;
+    const s = poly([[-hw, y0], [hw, y0], [hw, -70], [hw + 34, -56], [hw + 34, 240], [hw, 256], [hw, y1], [-hw, y1], [-hw, 256], [-hw - 34, 240], [-hw - 34, -56], [-hw, -70]].map(([x, y]) => [RX + x, y]));
     fans.forEach((f) => s.holes.push(circ(f.x, 95, f.r + 4)));
-    g.add(put(extrudeZ(s, 5, M.plastic), 0, 0, 447));
+    g.add(put(extrudeZ(s, 5, M.plastic, { curve: 48 }), 0, 0, 447));
     fans.forEach((f, i) => {
-      for (const z of [446, 420]) g.add(put(torus('z', f.r + 6, 4, M.plastic), f.x, 95, z));
+      for (const z of [446, 420]) g.add(put(torus('z', f.r + 6, 4, M.plastic, TAU, 96), f.x, 95, z));
       const n = i ? 7 : 9;
       const rot = new THREE.Group();
-      rot.add(cyl('z', 44, 30, M.plastic, 28));
+      rot.add(cyl('z', 44, 30, M.plastic, 36));
       for (let k = 0; k < n; k++) {
         const arm = new THREE.Group();
         const bl = box(f.r - 48, 46, 2.5, M.plastic, 1);
@@ -192,26 +199,26 @@ export function buildPeriphery(A) {
         arm.add(bl); arm.rotation.z = (k * TAU) / n;
         rot.add(arm);
       }
-      rot.add(put(torus('z', f.r - 2, 2.5, M.plastic), 0, 0, 0));
+      rot.add(put(torus('z', f.r - 2, 2.5, M.plastic, TAU, 96), 0, 0, 0));
       rot.position.set(f.x, 95, 432);
       g.add(rot);
-      g.add(put(cyl('z', 38, 40, M.steelDark, 24), f.x, 95, 404));                            // motor
+      g.add(put(cyl('z', 38, 40, M.steelDark, 32), f.x, 95, 404));                            // motor
       for (let k = 0; k < 3; k++) {
         const a = 0.5 + (k * TAU) / 3;
         g.add(bar([f.x + 36 * Math.cos(a), 95 + 36 * Math.sin(a), 408], [f.x + (f.r + 6) * Math.cos(a), 95 + (f.r + 6) * Math.sin(a), 422], 12, 5, M.plastic, 2));
       }
     });
-    g.add(put(box(70, 34, 20, M.plastic, 4), RX - 20, RAD.y + 190, 436));                     // fan control unit J293
-    plug(g, [RX - 20, RAD.y + 190, 422]);
+    g.add(put(box(70, 34, 20, M.plastic, 4), RX - 20, y1 - 40, 436));                         // fan control unit J293
+    plug(g, [RX - 20, y1 - 40, 422]);
   });
 
   // ───────────────────────── A/C condenser with refrigerant lines ─────────────────────────
   P('condenser', { cut: true, casing: true, explode: [0, 0, 720], anchor: [RX - 150, CO.y - 120, CO.z + 12] }, (g) => {
     g.add(put(box(CO.w, CO.h, CO.t, coreMaterial('coCore', 0xc2c6ca, CO.w, CO.h), 0), RX, CO.y, CO.z));
-    for (const s of [-1, 1]) g.add(put(box(16, CO.h + 6, 22, M.alu, 4), RX + s * (CO.w / 2 + 8), CO.y, CO.z));
-    g.add(put(cyl('y', 17, CO.h - 40, M.alu, 20), RX - CO.w / 2 - 34, CO.y, CO.z + 4));       // receiver / dryer
+    for (const s of [-1, 1]) g.add(put(box(20, CO.h + 12, 22, M.alu, 4), RX + s * (CO.w / 2 + 10), CO.y, CO.z));   // header tubes
+    g.add(put(cyl('y', 17, CO.h - 40, M.alu, 24), RX - CO.w / 2 - 38, CO.y, CO.z + 11));      // receiver / dryer
     // high-pressure line from the compressor, and the suction line back from the bulkhead
-    line(g, [[-140, 54, 250], [-200, 20, 330], [-276, -30, 430], [-286, -52, 520], [-262, -60, 560], [RX - CO.w / 2 - 8, -62, CO.z + 8]], 7, M.alu);
+    line(g, [[-140, 54, 250], [-200, 20, 330], [-276, -30, 430], [-286, -70, 520], [-240, -90, 556], [RX - CO.w / 2 - 10, -90, CO.z + 6]], 7, M.alu);
     line(g, [[-118, 56, 236], [-200, 96, 286], [-296, 150, 240], [-312, 232, 100], [-330, 256, -150], [-322, 300, -385]], 9, M.alu);
     g.add(put(hex('y', 9, 10, M.blue), -322, 296, -330));                                     // service port cap
   });
@@ -262,8 +269,8 @@ export function buildPeriphery(A) {
     g.add(put(cyl('z', 4, 20, M.steel, 8), 140, 78, 94), put(hex('z', 6.5, 6, M.steelDark), 140, 78, 100), put(box(18, 22, 5, M.steelDark, 2), 140, 72, 92));   // double stud M10 × 20 / M8 × 12
     for (const [x, y] of [[60, 60], [-150, 62]]) g.add(put(torus(x > 0 ? 'z' : 'x', 10.6, 1.6, M.steelDark), x, y, x > 0 ? 110 : 98));
     g.add(put(cyl('z', 9, 18, M.steelDark, 16), 60, 60, 106), put(cyl('z', 9, 16, M.castIron, 16), 150, 40, 90));  // stubs: pipe branch, cylinder block
-    hose(g, [[46, 6, 190], [40, 30, 152], [60, 58, 116]], 11.5);                                      // item 15: oil cooler → coolant pipe
-    hose(g, [[130, 6, 190], [152, 20, 150], [150, 40, 99]], 11.5);                                    // item 16: oil cooler → cylinder block
+    hose(g, [[46, -16, 190], [38, 24, 152], [60, 58, 116]], 11.5);                                    // item 15: oil cooler → coolant pipe
+    hose(g, [[130, -16, 190], [154, 8, 150], [150, 40, 99]], 11.5);                                   // item 16: oil cooler → cylinder block
     hose(g, [[257, HY + 34, -20], [278, 290, -50], [262, 330, -112], [220, 372, -140], [130, 410, -142], [-20, 428, -152], [-60, EC.y + 60, EC.z]], 13.5);   // item 44: flange → EGR cooler
   });
   P('heaterHoses', { explode: [200, 160, -260], anchor: [268, 300, -250] }, (g) => {
@@ -288,8 +295,8 @@ export function buildPeriphery(A) {
   });
   P('expansionTank', { explode: [-300, 200, -160], anchor: [-385, 478, -160] }, (g) => {
     const c = [-372, 395, -30];
-    g.add(put(sphere(86, M.tank, 0.86), ...c));
-    g.add(put(torus('y', 86, 3.5, M.tank), ...c));
+    g.add(put(sphere(86, M.tank, 0.86, 48, 28), ...c));
+    g.add(put(torus('y', 86, 3.5, M.tank, TAU, 72), ...c));
     g.add(put(cyl('y', 30, 18, M.tank, 28), c[0], c[1] + 72, c[2]));
     g.add(put(cyl('y', 34, 22, M.blue, 28), c[0], c[1] + 88, c[2]));                               // pressure cap
     for (let k = 0; k < 12; k++) { const a = (k * TAU) / 12; g.add(put(box(5, 22, 5, M.blue, 1), c[0] + 35 * Math.cos(a), c[1] + 88, c[2] + 35 * Math.sin(a))); }
@@ -298,27 +305,29 @@ export function buildPeriphery(A) {
     plug(g, [c[0] + 20, c[1] - 80, c[2] + 22]);                                                    // coolant shortage indicator sender G32
     g.add(put(box(40, 60, 10, M.plastic, 3), c[0] - 70, c[1] - 30, c[2] - 60));                    // body bracket
     // item 50: expansion tank → coolant pipe. Down the belt end, under the vibration damper, up behind the A/C compressor.
-    hose(g, [[c[0], c[1] - 84, c[2]], [-372, 230, -40], [-348, 60, -30], [-300, -90, 0], [-250, -118, 60], [-210, -80, 134], [-170, 10, 132], [-154, 52, 116], [-150, 62, 108]], 11.5);
+    hose(g, [[c[0], c[1] - 84, c[2]], [-372, 230, -40], [-348, 60, -30], [-300, -90, 0], [-256, -116, 70], [-212, -84, 137], [-170, 10, 132], [-154, 52, 116], [-150, 62, 108]], 11.5);
     g.add(put(box(12, 30, 26, M.plastic, 3), -350, 110, -34));                                     // item 51: hose bracket
   });
 
   // ───────────────────────── Fuel filter with lines ─────────────────────────
   P('fuelFilter', { explode: [-300, 100, 120], anchor: [-385, 392, 60] }, (g) => {
     const c = [-372, 300, 128];
-    g.add(put(latheY([[30, -72], [44, -62], [44, 62], [47, 64], [47, 70], [0, 70]], M.alu, 36), ...c));
-    g.add(put(cyl('y', 46, 14, M.plastic, 36), c[0], c[1] + 77, c[2]));
-    for (let k = 0; k < 5; k++) { const a = 0.3 + (k * TAU) / 5; g.add(put(hex('y', 4, 4, M.steel), c[0] + 38 * Math.cos(a), c[1] + 85, c[2] + 38 * Math.sin(a))); }
+    // The canister is drawn round its element, Ø 83 × 142 mm in the filter maker's catalogue; its own outside size is an estimate (≈).
+    g.add(put(latheY([[32, -84], [48, -72], [48, 62], [51, 64], [51, 70], [0, 70]], M.alu, 44), ...c));
+    g.add(put(cyl('y', 50, 14, M.plastic, 44), c[0], c[1] + 77, c[2]));
+    for (let k = 0; k < 5; k++) { const a = 0.3 + (k * TAU) / 5; g.add(put(hex('y', 4, 4, M.steel), c[0] + 42 * Math.cos(a), c[1] + 85, c[2] + 42 * Math.sin(a))); }
     g.add(put(box(34, 20, 26, M.plastic, 4), c[0], c[1] + 92, c[2]));                         // preheating valve
-    g.add(put(hex('y', 7, 8, M.brass), c[0], c[1] - 76, c[2]));                               // water drain screw
-    g.add(put(box(12, 110, 70, M.steelDark, 3), c[0] - 50, c[1], c[2]));                      // retainer (ETKA 127-020, item 5)
-    g.add(bar([c[0] - 50, c[1] - 52, c[2]], [c[0] + 46, c[1] - 80, c[2] - 6], 30, 4, M.steelDark, 2));
-    g.add(put(box(60, 44, 70, M.aluRough, 8), c[0] + 72, c[1] - 98, c[2] - 10));               // engine mount bracket the retainer is bolted to
-    g.add(put(hex('y', 5, 5, M.steelDark), c[0] + 50, c[1] - 74, c[2] - 6));                   // bolt M6 × 10 with nut
+    g.add(put(hex('y', 7, 8, M.brass), c[0], c[1] - 88, c[2]));                               // water drain screw
+    g.add(put(box(12, 142, 70, M.steelDark, 3), c[0] - 56, c[1] - 19, c[2]));                 // retainer (ETKA 127-020, item 5)
+    for (const dy of [34, -44]) g.add(put(torus('y', 49.4, 2.2, M.steelDark), c[0], c[1] + dy, c[2]));   // its clamping bands
+    g.add(put(box(122, 5, 30, M.steelDark, 2), c[0] + 1, c[1] - 90.5, c[2] - 30));             // foot of the retainer, passing beside the drain screw
+    g.add(put(box(50, 44, 44, M.aluRough, 8), c[0] + 67, c[1] - 115, c[2] - 25));              // engine mount bracket the retainer is bolted to
+    g.add(put(hex('y', 5, 5, M.steelDark), c[0] + 52, c[1] - 85.5, c[2] - 30));                // bolt M6 × 10 with nut
     for (const [dx, dz] of [[12, 8], [12, -8], [-14, -8], [-14, 8]]) {                          // four line connections on the flange lid, spring band clamps 14 × 12
       g.add(put(cyl('y', 4.6, 14, M.plastic, 10), c[0] + dx, c[1] + 96, c[2] + dz));
       clamp(g, [c[0] + dx, c[1] + 100, c[2] + dz], [c[0] + dx, c[1] + 110, c[2] + dz], 7, 0);
     }
-    g.add(put(torus('y', 45, 1.6, M.rubber), c[0], c[1] + 70, c[2]));                          // lid seal
+    g.add(put(torus('y', 49, 1.6, M.rubber), c[0], c[1] + 70, c[2]));                          // lid seal
     // to the tandem pump (supply + return) and back to the tank
     line(g, [[-212, HY + 96, HW + 34], [-262, 352, 150], [-330, 400, 112], [c[0] + 12, c[1] + 100, c[2] + 8]], 7, M.hose);
     line(g, [[-212, HY + 105, HW + 39], [-258, 366, 160], [-325, 414, 104], [c[0] + 12, c[1] + 100, c[2] - 8]], 7, M.hose);
@@ -367,48 +376,55 @@ export function buildPeriphery(A) {
     br([[-122, 366, 152], [-130, 320, 198], [-124, 268, 238]]);                               // alternator DF / L
     br([[-200, 352, 138], [-200, 345, 110], [-200, HY + 104, E.camZ + 8]]);                   // G40
     br([[264, 356, 136], [240, 300, 128], [228, 200, 118], [214, 80, 108], [208, 46, 100]]);  // G28
-    br([[228, 200, 118], [290, 186, 142], [326, 176, 158]]);                                  // starter terminal 50
-    br([[273, 322, 20], [258, 380, 8], [272, 432, 12], [296, 438, 16]]);                      // G70
+    br([[228, 200, 118], [290, 186, 142], [326, 181, 163]]);                                  // starter terminal 50
+    br([[273, 322, 20], [257, 380, 10], [270, 438, 12], [296, 446, 16]]);                     // G70
   });
 
   // ───────────────────────── Battery ─────────────────────────
-  const BT = { x: 436, y: 398, z: -116, sx: 175, sy: 190, sz: 242 };
+  // EN case size L3 (H6): 278 × 175 × 190 mm, the 72–74 Ah battery retailers list for the 2.0 TDI.
+  const BT = { x: 446, y: 398, z: -134, sx: 175, sy: 190, sz: 278 };
+  const BTZ = BT.z + BT.sz / 2 - 25;                             // line of the two terminal posts
   P('battery', { casing: true, explode: [420, 200, 120], anchor: [BT.x, BT.y + 108, BT.z] }, (g) => {
     g.add(put(box(BT.sx, BT.sy, BT.sz, M.plastic, 8), BT.x, BT.y, BT.z));
     g.add(put(box(BT.sx + 2, 16, BT.sz + 2, M.plasticGrey, 5), BT.x, BT.y + BT.sy / 2 - 12, BT.z));
     g.add(put(box(70, 2, 120, M.tank, 1), BT.x, BT.y + BT.sy / 2, BT.z + 20));                 // label
     g.add(put(box(BT.sx + 8, BT.sy - 30, BT.sz + 8, M.loom, 6), BT.x, BT.y - 22, BT.z));       // insulating fabric jacket
     for (const [dx, mat] of [[-50, M.red], [50, M.plasticGrey]]) {
-      g.add(put(cyl('y', 9, 16, M.lead, 16), BT.x + dx, BT.y + BT.sy / 2 + 6, BT.z + 96));
-      g.add(put(box(28, 12, 22, mat, 3), BT.x + dx, BT.y + BT.sy / 2 + 12, BT.z + 96));
+      g.add(put(cyl('y', 9, 16, M.lead, 16), BT.x + dx, BT.y + BT.sy / 2 + 6, BTZ));
+      g.add(put(box(28, 12, 22, mat, 3), BT.x + dx, BT.y + BT.sy / 2 + 12, BTZ));
     }
     g.add(put(box(BT.sx + 30, 10, BT.sz + 30, M.plastic, 4), BT.x, BT.y - BT.sy / 2 - 5, BT.z));   // tray
     g.add(put(box(BT.sx + 34, 60, 6, M.plastic, 2), BT.x, BT.y - BT.sy / 2 + 26, BT.z + BT.sz / 2 + 14));
-    for (const dx of [-100, 100]) g.add(put(cyl('y', 10, 76, M.steelDark, 12), BT.x + dx, 258, BT.z - 60));   // tray supports on the body
+    for (const dx of [-100, 80]) g.add(put(cyl('y', 10, 76, M.steelDark, 12), BT.x + dx, 258, BT.z - 20));   // tray supports on the body
   });
 
   // ───────────────────────── Starter ─────────────────────────
+  // Pre-engaged 2.0 kW starter: 233 mm long, Ø 76 mm flange register, 10-tooth pinion (parts listings for
+  // 02Z 911 023 F). The diameters of the motor and the solenoid switch are scaled from photographs (≈).
   const ST = { y: 112, z: 114 };
-  P('starter', { cut: true, explode: [240, 60, 200], anchor: [370, ST.y + 84, ST.z + 24] }, (g) => {
-    g.add(put(cyl('x', 31, 44, M.alu, 28), 284, ST.y, ST.z));                                  // drive end housing
-    g.add(put(box(12, 96, 60, M.alu, 6), 300, ST.y + 14, ST.z + 6));                           // flange
-    g.add(put(cyl('x', 38, 120, M.paintBlack, 32), 366, ST.y, ST.z));                          // motor
-    g.add(put(cyl('x', 34, 12, M.steelDark, 28), 432, ST.y, ST.z));
-    g.add(put(cyl('x', 24, 86, M.paintBlack, 24), 352, ST.y + 56, ST.z + 22));                 // solenoid switch
-    g.add(put(cyl('x', 20, 10, M.plastic, 20), 400, ST.y + 56, ST.z + 22));
-    g.add(put(hex('x', 6, 14, M.copper), 410, ST.y + 62, ST.z + 30));                          // terminal 30
-    g.add(put(hex('x', 4, 10, M.brass), 408, ST.y + 46, ST.z + 14));                           // terminal 50
-    const pin = put(cyl('x', 16, 20, M.steel, 12), 252, ST.y, ST.z);                           // pinion
-    g.add(pin);
-    for (const z of [-22, 34]) g.add(put(hex('x', 7, 8, M.steelDark), 308, ST.y + 52 * (z < 0 ? 1 : -0.6), ST.z + z));
+  P('starter', { cut: true, explode: [240, 60, 200], anchor: [380, ST.y + 84, ST.z + 24] }, (g) => {
+    g.add(put(extrudeX(gearShape(10, 11.5, 16), 20, M.steel, { curve: 4 }), 252, ST.y, ST.z));     // pinion, 10 teeth
+    g.add(put(cyl('x', 6, 26, M.steelDark, 16), 255, ST.y, ST.z));
+    g.add(put(latheX([[262, 14], [262, 24], [268, 27], [301, 27], [301, 38], [306, 38], [306, 14]], M.alu, 40), 0, ST.y, ST.z));   // drive-end housing with the Ø 76 register
+    g.add(put(box(10, 94, 60, M.alu, 6), 305, ST.y + 17, ST.z + 8));                           // flange
+    g.add(put(cyl('x', 38, 132, M.paintBlack, 40), 374, ST.y, ST.z));                          // field frame
+    for (const x of [309.5, 438.5]) g.add(put(torus('x', 38, 1.6, M.steelDark), x, ST.y, ST.z));
+    g.add(put(latheX([[440, 37], [454, 36], [460, 30], [470, 28], [472, 12], [472, 0]], M.steelDark, 40), 0, ST.y, ST.z));   // commutator end cap
+    for (const s of [-1, 1]) g.add(put(hex('x', 4, 4, M.steel), 473, ST.y, ST.z + s * 22));    // through-bolts
+    g.add(put(cyl('x', 26, 96, M.paintBlack, 32), 360, ST.y + 58, ST.z + 22));                 // solenoid switch
+    g.add(put(cyl('x', 21, 12, M.plastic, 24), 414, ST.y + 58, ST.z + 22));
+    g.add(put(hex('x', 6, 14, M.copper), 427, ST.y + 64, ST.z + 30));                          // terminal 30
+    g.add(put(hex('x', 4, 10, M.brass), 425, ST.y + 48, ST.z + 14));                           // terminal 50
+    g.add(bar([424, ST.y + 46, ST.z + 30], [440, ST.y + 30, ST.z + 22], 8, 2, M.copper, 0.5));   // lead from the switch into the motor
+    for (const z of [-22, 34]) g.add(put(hex('x', 7, 8, M.steelDark), 313, ST.y + 52 * (z < 0 ? 1 : -0.5), ST.z + z));
   });
 
   // ───────────────────────── Battery cables and earth strap ─────────────────────────
   P('powerCables', { cut: true, explode: [200, 260, 200], anchor: [390, 330, 196] }, (g) => {
-    const plus = [BT.x - 50, BT.y + BT.sy / 2 + 14, BT.z + 96];
-    const minus = [BT.x + 50, BT.y + BT.sy / 2 + 14, BT.z + 96];
-    line(g, [plus, [384, 506, 20], [376, 470, 44], [372, 330, 52], [380, 250, 90], [404, 192, 140], [412, 174, 144]], 6.5, M.red);   // battery + → starter
-    line(g, [[412, 176, 146], [330, 150, 224], [200, 72, 300], [40, 50, 318], [-72, 56, 300], [-112, 150, 270], [-112, 216, 262]], 5, M.red);         // starter → alternator B+
+    const plus = [BT.x - 50, BT.y + BT.sy / 2 + 14, BTZ];
+    const minus = [BT.x + 50, BT.y + BT.sy / 2 + 14, BTZ];
+    line(g, [plus, [384, 506, 20], [376, 470, 44], [372, 330, 52], [380, 250, 90], [428, 204, 146], [430, 180, 145]], 6.5, M.red);   // battery + → starter
+    line(g, [[430, 178, 147], [418, 160, 178], [330, 150, 224], [200, 72, 300], [40, 50, 318], [-72, 56, 300], [-112, 150, 270], [-112, 216, 262]], 5, M.red);   // starter → alternator B+
     g.add(put(hex('x', 6, 8, M.copper), -110, 216, 262));
     line(g, [minus, [500, 506, 20], [520, 470, 44], [540, 330, 50], [552, 220, 54], [524, 128, 60]], 6.5, M.rubber);                // battery − → gearbox
     g.add(put(box(26, 4, 16, M.copper, 1), 520, 124, 56));
@@ -418,12 +434,12 @@ export function buildPeriphery(A) {
   // ───────────────────────── Front exhaust pipe with flexible joint ─────────────────────────
   const CX = -62 + 154, TZ = -185;
   P('frontPipe', { explode: [80, -200, -420], anchor: [100, -150, -380] }, (g) => {
-    g.add(tube([[CX, -74, TZ + 4], [CX, -112, TZ - 4], [96, -150, -232], [100, -165, -300]], 27, M.stainless, { cap: false }));
+    g.add(tube([[CX, -74, TZ + 4], [CX, -112, TZ - 4], [96, -150, -232], [100, -165, -300]], 27, M.stainless, { cap: false, radial: 24 }));
     g.add(put(cyl('y', 40, 6, M.exhaustDark, 28), CX, -80, TZ + 4));
-    const flex = cyl('z', 35, 120, M.braid, 28);
+    const flex = cyl('z', 35, 120, M.braid, 36);
     g.add(put(flex, 100, -165, -360));
-    for (const z of [-298, -422]) g.add(put(cyl('z', 37, 12, M.stainless, 28), 100, -165, z));
-    g.add(put(cyl('z', 27, 110, M.stainless, 24), 100, -165, -482));
+    for (const z of [-298, -422]) g.add(put(cyl('z', 37, 12, M.stainless, 36), 100, -165, z));
+    g.add(put(cyl('z', 27, 110, M.stainless, 32), 100, -165, -482));
     g.add(put(torus('z', 28, 3, M.exhaustDark), 100, -165, -536));
   });
 }

@@ -191,13 +191,13 @@ export function box(sx, sy, sz, mat, r = 0) {
   const g = r > 0 ? new RoundedBoxGeometry(sx, sy, sz, 3, Math.min(r, sx / 2, sy / 2, sz / 2)) : new THREE.BoxGeometry(sx, sy, sz);
   return mesh(g, mat);
 }
-export function sphere(r, mat, sy = 1) {
-  const m = mesh(new THREE.SphereGeometry(r, 24, 16), mat);
+export function sphere(r, mat, sy = 1, ws = 24, hs = 16) {
+  const m = mesh(new THREE.SphereGeometry(r, ws, hs), mat);
   m.scale.y = sy;
   return m;
 }
-export function torus(axis, R, r, mat, arc = TAU) {
-  const g = new THREE.TorusGeometry(R, r, 14, 44, arc);
+export function torus(axis, R, r, mat, arc = TAU, seg = 44) {
+  const g = new THREE.TorusGeometry(R, r, 14, seg, arc);
   if (axis === 'x') g.rotateY(Math.PI / 2);
   else if (axis === 'y') g.rotateX(Math.PI / 2);
   return mesh(g, mat);

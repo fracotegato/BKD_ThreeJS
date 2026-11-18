@@ -112,7 +112,7 @@ export function buildGearbox(A, anim) {
   // ═════════════════════════ input shaft ═════════════════════════
   P(IN, 'inputShaft', 350, 44, { anchor: [520, 46, 0] }, (t) => {
     const s = spin(new THREE.Group(), 1);
-    s.add(gear(26, 11, 252, 300, M.steel));                                                    // splines for the clutch plate
+    s.add(gear(23, 11, 252, 300, M.steel));                                                    // 23 splines for the clutch plate (clutch kit listings)
     s.add(put(cyl('x', 9, 14, M.steel, 20), 247, 0, 0));
     s.add(put(cyl('x', 14, 50, M.steel, 28), 325, 0, 0), put(cyl('x', 16, 20, M.steel, 28), 359, 0, 0));   // seal land, roller journal
     s.add(put(cyl('x', 13, 204, M.steel, 28), 470, 0, 0), put(cyl('x', 15, 24, M.steel, 28), 583, 0, 0));
@@ -310,12 +310,12 @@ export function buildGearbox(A, anim) {
   const CL = [200, 0, 0];
   const R = (id, dx, opts, fn) => C(id, [dx, 0, 0], { explode: CL, periph: false, ...opts }, (g) => { const s = spin(new THREE.Group(), 1); g.add(s); fn(s, g); });
   R('flywheel', 0, { anchor: [221, 148, 0] }, (s) => {
-    s.add(latheX([[214, 30], [214, 138], [230, 138], [230, 118], [220, 118], [220, 30], [214, 30]], M.steelDark, 72));   // primary mass with spring channel
+    s.add(latheX([[214, 20], [214, 138], [230, 138], [230, 118], [220, 118], [220, 20], [214, 20]], M.steelDark, 72));   // primary mass with spring channel
     s.add(put(extrudeX(gearShape(135, 139.5, 144), 12, M.steel, { curve: 4 }), 221, 0, 0));       // starter ring gear
     ring(60, 132, (y, z) => s.add(put(box(3, 4, 3, M.steel), 229, y, z)));                        // rim markings
   });
   R('flywheelBolts', 50, { anchor: [228, 40, 0] }, (s) => {
-    ring(6, 22, (y, z) => s.add(put(hex('x', 7.5, 7, M.steelDark), 224, y, z), put(cyl('x', 5, 30, M.steelDark, 10), 206, y, z)));
+    ring(6, 33, (y, z) => s.add(put(hex('x', 7.5, 7, M.steelDark), 224, y, z), put(cyl('x', 5, 22, M.steelDark, 10), 210, y, z)));   // on a 66 mm pitch circle (flywheel listing)
   });
   R('dmfSprings', 110, { anchor: [232, 118, 0] }, (s) => {
     for (const a0 of [0.2, Math.PI + 0.2]) {
@@ -339,7 +339,7 @@ export function buildGearbox(A, anim) {
     for (const x of [263.2, 268]) s.add(sleeve(x, x + 3.2, 78, 120, M.exhaustDark, 64));          // friction linings
     s.add(sleeve(266.2, 268.2, 40, 119, M.steel, 48));                                           // cushion plate
     ring(16, 100, (y, z) => s.add(put(cyl('x', 2.4, 8.4, M.brass, 8), 267.4, y, z)));             // lining rivets
-    s.add(sleeve(258, 282, 0.1, 22, M.steelDark), gear(26, 11.2, 257.8, 282.2, M.dark));          // rigid hub with spline
+    s.add(sleeve(258, 282, 0.1, 22, M.steelDark), gear(23, 11.2, 257.8, 282.2, M.dark));          // rigid hub with 23 splines
     s.add(sleeve(264, 271, 22, 42, M.steelDark));
     ring(6, 32, (y, z) => s.add(put(cyl('x', 3, 8, M.steel, 8), 267.5, y, z)));
   });
