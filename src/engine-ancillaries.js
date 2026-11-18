@@ -357,9 +357,9 @@ export function buildAncillaries(A, anim) {
     g.add(tube([[-54, 90, 340], [-110, 88, 342], [-170, 88, 356], [-216, 87, 374]], 27, M.plastic, { cap: false, radial: 24 }));
     const mouth = mframe(g);                                                                          // coupling on the anti-shudder valve
     mouth.add(put(cyl('y', 34, 26, M.plastic, 28), IN.x, J.mouth - 12, J.off), put(torus('y', 35.6, 1.4, M.steel), IN.x, J.mouth - 4, J.off));
-    g.add(tube([[-216, 87, 372], [-246, 85, 390], [-270, 82, 414], [-272, 80, 440], [-272, 80, 502]], 29, M.hose, { cap: false, radial: 24 }));   // turns in early to pass outside the fan ring
+    g.add(tube([[-216, 87, 372], [-246, 85, 388], [-268, 82, 406], [-272, 80, 426], [-272, 80, 452]], 29, M.hose, { cap: false, radial: 24 }));   // turns in early to pass outside the fan ring
     // plug-in couplings with seal ring and wire retaining clip (ETKA 145-085: seal 57.85 / 58.05 mm, clip SCA52)
-    for (const [x, y, z, ry] of [[-58, 90, 340, 1.5], [-212, 87, 372, 1.05], [-272, 80, 480, 0]]) {
+    for (const [x, y, z, ry] of [[-58, 90, 340, 1.5], [-212, 87, 372, 1.05], [-272, 80, 462, 0]]) {
       const c = new THREE.Group();
       c.add(cyl('z', 34, 26, M.plastic, 28));
       const clip = mesh(new THREE.TorusGeometry(35.6, 1.4, 6, 28, Math.PI * 1.55), M.steel);

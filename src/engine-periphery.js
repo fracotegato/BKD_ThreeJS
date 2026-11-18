@@ -94,8 +94,12 @@ export function buildPeriphery(A) {
     g.add(put(box(66, IC.h + 14, 40, M.plastic, 12), RX - IC.w / 2 - 32, IC.y, IC.z));
     g.add(put(box(62, IC.h + 14, 40, M.plastic, 12), RX + IC.w / 2 + 30, IC.y, IC.z));
     for (let k = 0; k < 6; k++) for (const s of [-1, 1]) g.add(put(box(4, 12, 40, M.plastic, 1), RX + s * (IC.w / 2 + 10 + (k % 3) * 18), IC.y - 150 + k * 60, IC.z + 1));
-    g.add(put(cyl('z', 30, 34, M.plastic, 36), -272, 80, IC.z - 26));                         // outlet to the intake manifold
-    g.add(put(torus('z', 30, 3, M.plastic), -272, 80, IC.z - 42));
+    // outlet to the intake manifold: a moulded boss on the outer end of the belt-side tank, with the stub
+    // pointing back past the end of the radiator
+    g.add(put(box(70, 104, 46, M.plastic, 16), -262, 80, IC.z - 2));
+    g.add(put(cyl('z', 33, 14, M.plastic, 36), -272, 80, IC.z - 30));                         // root of the stub
+    g.add(put(cyl('z', 27, 50, M.plastic, 36), -272, 80, IC.z - 54));                         // stub the coupling pushes onto
+    g.add(put(torus('z', 27.6, 2.2, M.plastic), -272, 80, IC.z - 72));                        // bead behind which the wire clip locks
     g.add(put(cyl('x', 30, 30, M.plastic, 36), RX + IC.w / 2 + 66, -85, IC.z - 2));           // inlet from the turbocharger
     g.add(put(torus('x', 30, 3, M.plastic), RX + IC.w / 2 + 80, -85, IC.z - 2));
     for (const s of [-1, 1]) g.add(put(box(IC.w + 96, 8, 26, M.rubber, 3), RX, IC.y + s * (IC.h / 2 + 8), IC.z));   // sealing strips
