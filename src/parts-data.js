@@ -2,7 +2,7 @@
 // "The 2.0 ltr. TDI engine – design and function". Values with ≈ are modelling estimates.
 
 import { DRIVETRAIN } from './parts-data-drivetrain.js';
-import { ENGINE_DETAIL, ENGINE_LINKS, ENGINE_NOTES, COOLING, LINES, INJECTOR } from './parts-data-engine.js';
+import { ENGINE_DETAIL, ENGINE_LINKS, ENGINE_NOTES, COOLING, LINES, INJECTOR, BAY } from './parts-data-engine.js';
 
 export const SYSTEMS = {
   mech: { name: 'Engine mechanics', color: '#aab4c3' },
@@ -643,7 +643,7 @@ export const PARTS = {
   },
 };
 
-Object.assign(PARTS, DRIVETRAIN, ENGINE_DETAIL, COOLING, LINES, INJECTOR);
+Object.assign(PARTS, DRIVETRAIN, ENGINE_DETAIL, COOLING, LINES, INJECTOR, BAY);
 
 // Connections from the engine's own parts to the parts around it.
 const MORE_LINKS = {

@@ -2,7 +2,7 @@
 // Positions and shapes follow photographs of a complete BKD engine from an Audi A3 8P / Golf 5
 // (front, rear, belt-end and gearbox-end views). Sizes are scaled from those photos, so treat them as ≈.
 import * as THREE from 'three';
-import {
+import { mesh,
   M, put, cyl, hex, box, sphere, torus, bar, rod, tube, latheX, latheY, extrudeX, extrudeZ,
   rrect, circ, poly, gearShape, beltPath, ribbon, beltMaterial,
 } from './helpers.js';
@@ -311,8 +311,14 @@ export function buildAncillaries(A, anim) {
     g.add(tube([[IN.x, FL.y - 18, FL.z + 24], [IN.x - 2, FL.y - 52, FL.z + 54], [-14, 86, 256], [-62, 88, 300]], 29, M.hose, { cap: false }));
     g.add(tube([[-62, 88, 300], [-110, 88, 326], [-170, 88, 352], [-222, 87, 376]], 27, M.plastic, { cap: false }));
     g.add(tube([[-222, 87, 376], [-252, 84, 400], [-268, 81, 444], [-268, 80, 502]], 29, M.hose, { cap: false }));
-    for (const [x, y, z, ry] of [[-66, 88, 302, 1.0], [-218, 87, 374, 1.05], [-268, 80, 492, 0]]) {
-      const c = torus('z', 30.5, 2.6, M.steel);
+    // plug-in couplings with seal ring and wire retaining clip (ETKA 145-085: seal 57.85 / 58.05 mm, clip SCA52)
+    for (const [x, y, z, ry] of [[-66, 88, 302, 1.0], [-218, 87, 374, 1.05], [-268, 80, 480, 0]]) {
+      const c = new THREE.Group();
+      c.add(cyl('z', 34, 26, M.plastic, 28));
+      const clip = mesh(new THREE.TorusGeometry(35.6, 1.4, 6, 28, Math.PI * 1.55), M.steel);
+      clip.rotation.z = Math.PI * 0.72;
+      c.add(put(clip, 0, 0, 5), put(box(10, 5, 3, M.steel), 0, 37, 5));
+      for (const dz of [-22, 22]) c.add(put(mesh(new THREE.CylinderGeometry(30.6, 30.6, 16, 28, 1, true), M.steel), 0, 0, dz)).children.at(-1).rotation.x = Math.PI / 2;   // crimped ferrules
       c.position.set(x, y, z); c.rotation.y = -ry;
       g.add(c);
     }
