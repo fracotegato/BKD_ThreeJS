@@ -120,7 +120,7 @@ export function buildDetail(A, anim) {
     });
   });
   B('blockDowels', [0, 60, 0], { explode: [0, 300, 0], anchor: [-176, 246, 60] }, (g) => {
-    for (const [x, z] of [[-176, 56], [176, -56]]) g.add(put(latheX([[-7, 5.6], [-7, 7.2], [7, 7.2], [7, 5.6], [-7, 5.6]], M.steel, 20), 0, 0, 0)).children.at(-1).rotateZ(Math.PI / 2).position.set(x, E.deckY, z);
+    for (const [x, z] of [[-196, -72], [196, 72]]) g.add(put(latheX([[-7, 5.6], [-7, 7.2], [7, 7.2], [7, 5.6], [-7, 5.6]], M.steel, 20), 0, 0, 0)).children.at(-1).rotateZ(Math.PI / 2).position.set(x, E.deckY, z);
   });
 
   // ═════════════════════════ cylinder head ═════════════════════════
@@ -158,7 +158,7 @@ export function buildDetail(A, anim) {
   });
   H('headBolts', [0, 900, 0], { explode: [0, 620, 0], anchor: [0, HY + 84, 62] }, (g) => {
     for (const x of MAINS) for (const z of [-56, 56]) {
-      g.add(put(cyl('y', 5.6, 168, M.steelDark, 12), x, HY - 10, z), put(cyl('y', 9, 10, M.steelDark, 12), x, HY + 79, z), put(cyl('y', 11, 2, M.steel, 16), x, HY + 73, z));
+      g.add(put(cyl('y', 5.6, 140, M.steelDark, 12), x, HY + 4, z), put(cyl('y', 9, 10, M.steelDark, 12), x, HY + 79, z), put(cyl('y', 11, 2, M.steel, 16), x, HY + 73, z));
       g.add(put(cyl('y', 4, 1, M.dark, 8), x, HY + 84.2, z));                                               // internal thread for the bearing frame bolt
     }
   });

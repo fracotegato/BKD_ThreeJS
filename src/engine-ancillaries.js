@@ -251,64 +251,69 @@ export function buildAncillaries(A, anim) {
   });
 
   // ───────────────────────── Intake manifold ─────────────────────────
-  // Sand-cast aluminium "fan": eight ports along the head, runners sweeping down to one central outlet.
-  const IN = { x: 10, z: HW + 34, top: HY + 72, end: HY + 22, neck: HY - 10 };
-  A.part('intakeManifold', { cut: true, explode: [0, 340, 210], anchor: [-120, HY + 44, HW + 54] }, (g) => {
-    g.add(put(box(388, 46, 8, M.aluRough, 2), 0, PY, HW + 4));                                     // port flange
-    const fan = poly([
-      [-178, IN.top - 8], [-170, IN.top], [176, IN.top], [184, IN.top - 8], [184, IN.end + 8], [176, IN.end],
-      [92, IN.end - 4], [IN.x + 42, IN.neck], [IN.x - 42, IN.neck], [-78, IN.end - 4], [-170, IN.end], [-178, IN.end + 8],
-    ]);
-    g.add(put(extrudeZ(fan, 34, M.aluRough, { bevel: 5 }), 0, 0, HW + 10));
-    g.add(put(cyl('x', 17, 344, M.aluRough, 24), 2, IN.top - 20, HW + 44));                        // upper gallery
+  // Sand-cast aluminium "fan". It does not hang straight down: from the port flange it slopes down and away
+  // from the head at about 48°, eight runners sweeping to one outlet. The EGR valve and the anti-shudder
+  // valve continue along the same sloping axis, so the charge air arrives from below and in front.
+  const IN = { x: 10 };
+  const MT = 48 * DEG, MP = { y: PY, z: HW + 8 };                 // slope angle and pivot (the port line)
+  /** Group in the manifold's sloping frame: local -y runs down the slope, +z points out of its face. */
+  const mframe = (g) => { const f = new THREE.Group(); f.position.set(0, MP.y, MP.z); f.rotation.x = -MT; g.add(f); return f; };
+  /** Manifold frame → engine coordinates. */
+  const mw = (x, y, z) => [x, MP.y + y * Math.cos(MT) + z * Math.sin(MT), MP.z - y * Math.sin(MT) + z * Math.cos(MT)];
+  const J = { egr: -116, asv: -164, mouth: -188, off: 20 };       // stations along the slope
+  A.part('intakeManifold', { cut: true, explode: [0, 340, 210], anchor: mw(-120, -16, 40) }, (g) => {
+    g.add(put(box(388, 46, 8, M.aluRough, 2), 0, PY, HW + 4));                                     // port flange on the head
+    g.add(put(box(372, 34, 18, M.aluRough, 6), 0, PY - 2, HW + 15));                               // port block
+    E.cylX.forEach((cx) => { for (const dx of [-36, 36]) g.add(put(hex('z', 5, 5, M.steelDark), cx + dx, PY + 16, HW + 9)); });
+    const f = mframe(g);
+    const fan = poly([[-180, 4], [-172, 14], [176, 14], [184, 4], [184, -22], [176, -30], [92, -36], [IN.x + 42, -80], [IN.x - 42, -80], [-78, -36], [-172, -30], [-180, -22]]);
+    f.add(put(extrudeZ(fan, 26, M.aluRough, { bevel: 5 }), 0, 0, 4));
+    f.add(put(cyl('x', 17, 344, M.aluRough, 28), 2, -4, 22));                                      // gallery behind the ports
     E.cylX.forEach((cx) => {
       for (const dx of [-16, 16]) {
         const x0 = cx + dx, x1 = IN.x + (cx + dx - IN.x) * 0.2;
-        g.add(tube([[x0, IN.top - 16, HW + 42], [x0 * 0.72 + IN.x * 0.28, HY + 34, HW + 46], [x1, IN.neck + 20, HW + 42]], 12.5, M.aluRough, { cap: true }));
+        f.add(tube([[x0, -2, 30], [x0 * 0.72 + IN.x * 0.28, -34, 34], [x1, -62, 30]], 12.5, M.aluRough, { cap: true }));
       }
-      for (const dx of [-36, 36]) g.add(put(hex('z', 5, 5, M.steelDark), cx + dx, PY + 12, HW + 9));
     });
-    for (const x of [-150, 0, 150]) g.add(put(cyl('y', 9, 10, M.aluRough, 16), x, IN.top + 3, HW + 30));
-    // central outlet with three-bolt flange
-    g.add(put(cyl('y', 34, 16, M.aluRough, 32), IN.x, IN.neck - 6, IN.z));
-    ring(3, 40, (dx, dz) => g.add(put(cyl('y', 9, 8, M.aluRough, 16), IN.x + dx, IN.neck - 12, IN.z + dz)), 0.5);
+    for (const x of [-150, 0, 150]) f.add(put(cyl('z', 9, 8, M.aluRough, 16), x, 6, 32));          // bosses
+    f.add(put(cyl('y', 34, 16, M.aluRough, 36), IN.x, -86, J.off));                                // outlet
+    f.add(put(cyl('y', 50, 5, M.aluRough, 3), IN.x, -92, J.off));                                  // three-bolt flange
   });
 
   // ───────────────────────── EGR valve (vacuum operated, 038 131 501 AN) ─────────────────────────
   // A short aluminium tube that the intake air passes straight through, bolted between the anti-shudder
   // valve and the manifold by a triangular three-bolt flange. The polished vacuum capsule on its side pulls
   // a poppet off its seat on the opposite side, where the exhaust gas arrives from the EGR cooler.
-  const EV = { top: IN.neck - 14, y: IN.neck - 36 };
-  A.part('egrValve', { cut: true, explode: [0, 200, 320], anchor: [IN.x - 66, EV.y + 34, IN.z + 10] }, (g) => {
-    g.add(put(cyl('y', 34, 44, M.alu, 36), IN.x, EV.y, IN.z));                                      // through-flow body
+  const EP = mw(IN.x + 56, J.egr, J.off + 2);                    // exhaust gas port, where the EGR pipe ends
+  A.part('egrValve', { cut: true, explode: [0, 200, 320], anchor: mw(IN.x - 66, J.egr + 30, J.off + 24) }, (g) => {
+    const v = new THREE.Group();
+    v.position.set(IN.x, J.egr, J.off);
+    mframe(g).add(v);
+    v.add(cyl('y', 34, 44, M.alu, 40));                                                             // through-flow body
     for (const dy of [19, -19]) {
-      g.add(put(cyl('y', 50, 6, M.alu, 3), IN.x, EV.y + dy, IN.z));                                 // triangular flange
-      ring(3, 44, (dx, dz) => g.add(put(cyl('y', 9, 6.4, M.alu, 16), IN.x + dz, EV.y + dy, IN.z + dx)), 0);
+      v.add(put(cyl('y', 50, 6, M.alu, 3), 0, dy, 0));                                              // triangular flange
+      ring(3, 44, (dx, dz) => v.add(put(cyl('y', 9, 6.4, M.alu, 16), dz, dy, dx)), 0);
     }
-    g.add(put(torus('y', 31, 1.6, M.rubber), IN.x, EV.y + 22.4, IN.z));                             // O-ring 62 × 3 to the manifold
-    // vacuum capsule: stainless mushroom with crimped seam and a side nipple
-    g.add(put(latheX([[-76, 0], [-76, 14], [-72, 24], [-64, 27], [-60, 36], [-56, 39.5], [-51, 39.5], [-49, 30], [-43, 15], [-33, 13]], M.stainless, 40), IN.x, EV.y, IN.z));
-    g.add(put(torus('x', 39.6, 1.7, M.steel), IN.x - 53.5, EV.y, IN.z));
-    g.add(put(cyl('z', 3, 18, M.stainless, 10), IN.x - 68, EV.y + 6, IN.z + 24));                   // vacuum connection from N18
-    g.add(put(cyl('x', 3, 62, M.steel, 10), IN.x - 4, EV.y, IN.z));                                 // valve stem across the bore
-    // exhaust gas port with two-bolt flange for the connecting pipe from the cooler
-    g.add(put(cyl('x', 20, 22, M.alu, 24), IN.x + 43, EV.y, IN.z + 2));
-    g.add(put(box(6, 30, 56, M.alu, 6), IN.x + 53, EV.y, IN.z + 2));
-    for (const dz of [-21, 21]) g.add(put(hex('x', 4.6, 5, M.steelDark), IN.x + 50, EV.y, IN.z + 2 + dz));
-    g.add(put(cyl('x', 17, 1.2, M.gasket, 24), IN.x + 56.4, EV.y, IN.z + 2));                       // seal 32 mm
+    v.add(put(torus('y', 31, 1.6, M.rubber), 0, 22.4, 0));                                          // O-ring 62 × 3 to the manifold
+    v.add(latheX([[-76, 0], [-76, 14], [-72, 24], [-64, 27], [-60, 36], [-56, 39.5], [-51, 39.5], [-49, 30], [-43, 15], [-33, 13]], M.stainless, 44));   // vacuum capsule
+    v.add(put(torus('x', 39.6, 1.7, M.steel), -53.5, 0, 0));
+    v.add(put(cyl('z', 3, 18, M.stainless, 10), -68, 6, 24));                                       // vacuum connection from N18
+    v.add(put(cyl('x', 3, 62, M.steel, 10), -4, 0, 0));                                             // valve stem across the bore
+    v.add(put(cyl('x', 20, 22, M.alu, 24), 43, 0, 2));                                              // exhaust gas port
+    v.add(put(box(6, 30, 56, M.alu, 6), 53, 0, 2));
+    for (const dz of [-21, 21]) v.add(put(hex('x', 4.6, 5, M.steelDark), 50, 0, 2 + dz));
+    v.add(put(cyl('x', 17, 1.2, M.gasket, 24), 56.4, 0, 2));                                        // seal 32 mm
   });
 
   // ───────────────────────── Anti-shudder valve V157 (intake manifold flap) ─────────────────────────
   // Electric throttle body bolted under the EGR valve: aluminium ring with a brass flap on a spindle and a
   // black plastic housing for the positioning motor and gears. The charge air hose plugs onto its mouth.
-  const FL = { y: EV.y - 44, z: IN.z + 18 };
-  A.part('intakeFlap', { cut: true, explode: [0, 120, 360], anchor: [IN.x + 70, FL.y - 4, FL.z + 30] }, (g) => {
+  A.part('intakeFlap', { cut: true, explode: [0, 120, 360], anchor: mw(IN.x + 76, J.asv, J.off + 30) }, (g) => {
     const a = new THREE.Group();
-    a.position.set(IN.x, FL.y, FL.z);
-    a.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -0.6, 0.8));
-    g.add(a);
-    // local frame: +y = out of the mouth (down and forward), -y = towards the EGR valve
-    a.add(cyl('y', 33, 48, M.aluDark, 32));                                                          // throttle body
+    a.position.set(IN.x, J.asv, J.off);
+    a.rotation.x = Math.PI;                                       // its own +y = out of the mouth, down the slope
+    mframe(g).add(a);
+    a.add(cyl('y', 33, 48, M.aluDark, 40));                                                          // throttle body
     a.add(put(cyl('y', 50, 6, M.aluDark, 3), 0, -21, 0));                                            // flange to the EGR valve
     ring(3, 44, (dx, dz) => a.add(put(cyl('y', 9, 6.4, M.aluDark, 16), dz, -21, dx), put(hex('y', 4.6, 4, M.steelDark), dz, -16, dx)), 0);   // three M6 × 20 bolts
     a.add(put(torus('y', 28.6, 1.3, M.rubber), 0, -24.4, 0));                                        // O-ring 55 × 2.5
@@ -322,17 +327,19 @@ export function buildAncillaries(A, anim) {
     a.add(put(box(40, 52, 56, M.plastic, 9), 52, 2, 0));                                             // positioning motor housing
     a.add(put(cyl('x', 27, 12, M.plastic, 30), 76, 6, 4));                                           // gear cover
     for (let k = 0; k < 5; k++) { const t = (k * Math.PI * 2) / 5; a.add(put(hex('x', 2.6, 3, M.steelDark), 82, 6 + 22 * Math.cos(t), 4 + 22 * Math.sin(t))); }
-    a.add(put(box(20, 18, 28, M.plasticGrey, 3), 56, -30, 20));                                      // five-pin connector
+    a.add(put(box(20, 18, 28, M.plasticGrey, 3), 56, -30, -20));                                     // five-pin connector
   });
 
   // ───────────────────────── Charge air hose + G31 / G42 ─────────────────────────
   A.part('chargePipe', { cut: true, explode: [-30, 40, 400], anchor: [-180, 92, 372] }, (g) => {
     // flap unit → rubber hose → rigid plastic pipe → hose → belt-side tank of the charge air cooler (ETKA 145-085)
-    g.add(tube([[IN.x, FL.y - 18, FL.z + 24], [IN.x - 2, FL.y - 52, FL.z + 54], [-14, 86, 256], [-62, 88, 300]], 29, M.hose, { cap: false }));
-    g.add(tube([[-62, 88, 300], [-110, 88, 326], [-170, 88, 352], [-222, 87, 376]], 27, M.plastic, { cap: false }));
+    g.add(tube([mw(IN.x, J.mouth + 4, J.off), mw(IN.x, J.mouth - 40, J.off), [-16, 100, 332], [-54, 90, 340]], 29, M.hose, { cap: false }));
+    g.add(tube([[-54, 90, 340], [-110, 88, 342], [-170, 88, 356], [-222, 87, 378]], 27, M.plastic, { cap: false }));
+    const mouth = mframe(g);                                                                          // coupling on the anti-shudder valve
+    mouth.add(put(cyl('y', 34, 26, M.plastic, 28), IN.x, J.mouth - 12, J.off), put(torus('y', 35.6, 1.4, M.steel), IN.x, J.mouth - 4, J.off));
     g.add(tube([[-222, 87, 376], [-252, 84, 400], [-268, 81, 444], [-268, 80, 502]], 29, M.hose, { cap: false }));
     // plug-in couplings with seal ring and wire retaining clip (ETKA 145-085: seal 57.85 / 58.05 mm, clip SCA52)
-    for (const [x, y, z, ry] of [[-66, 88, 302, 1.0], [-218, 87, 374, 1.05], [-268, 80, 480, 0]]) {
+    for (const [x, y, z, ry] of [[-58, 90, 340, 1.5], [-218, 87, 376, 1.05], [-268, 80, 480, 0]]) {
       const c = new THREE.Group();
       c.add(cyl('z', 34, 26, M.plastic, 28));
       const clip = mesh(new THREE.TorusGeometry(35.6, 1.4, 6, 28, Math.PI * 1.55), M.steel);
@@ -342,24 +349,21 @@ export function buildAncillaries(A, anim) {
       c.position.set(x, y, z); c.rotation.y = -ry;
       g.add(c);
     }
-    const c1 = torus('y', 30, 3, M.steel);
-    c1.position.set(IN.x, FL.y - 24, FL.z + 30); c1.rotation.x = 0.9;
-    g.add(c1);
   });
   A.part('g31', { cut: true, explode: [-30, 40, 450], anchor: [-120, 140, 336] }, (g) => {
-    g.add(put(box(22, 18, 26, M.plastic, 3), -120, 121, 330));
-    g.add(put(box(14, 14, 18, M.plasticGrey, 2), -120, 135, 334));
-    g.add(put(hex('y', 4, 4, M.steel), -108, 128, 322));
+    g.add(put(box(22, 18, 26, M.plastic, 3), -120, 121, 344));
+    g.add(put(box(14, 14, 18, M.plasticGrey, 2), -120, 135, 348));
+    g.add(put(hex('y', 4, 4, M.steel), -108, 128, 336));
   });
 
   // ───────────────────────── Solenoid valve block (N18, N345, N75) ─────────────────────────
-  A.part('valveBlock', { cut: true, explode: [120, 300, 260], anchor: [172, HY + 96, HW + 76] }, (g) => {
-    g.add(put(box(70, 84, 8, M.plastic, 3), 172, HY + 66, HW + 52));
-    g.add(bar([172, HY + 30, HW + 50], [172, HY + 24, HW + 12], 30, 6, M.plastic, 2));
+  A.part('valveBlock', { cut: true, explode: [120, 300, 260], anchor: [172, HY + 112, HW + 76] }, (g) => {
+    g.add(put(box(70, 62, 8, M.plastic, 3), 172, HY + 93, HW + 52));
+    g.add(bar([172, HY + 112, HW + 50], [172, HY + 108, HW + 6], 30, 6, M.plastic, 2));
     [150, 172, 194].forEach((x, i) => {
-      g.add(put(cyl('y', 11, 36, M.plastic, 18), x, HY + 70, HW + 68));
-      g.add(put(box(14, 12, 14, M.plasticGrey, 2), x, HY + 92, HW + 72));
-      g.add(put(cyl('z', 3, 12, M.plasticGrey, 8), x, HY + 58 + i * 3, HW + 82));
+      g.add(put(cyl('y', 11, 36, M.plastic, 18), x, HY + 86, HW + 68));
+      g.add(put(box(14, 12, 14, M.plasticGrey, 2), x, HY + 108, HW + 72));
+      g.add(put(cyl('z', 3, 12, M.plasticGrey, 8), x, HY + 74 + i * 3, HW + 82));
     });
   });
 
@@ -415,10 +419,10 @@ export function buildAncillaries(A, anim) {
   A.part('egrPipe', { explode: [140, 120, 0], anchor: [246, 232, 20] }, (g) => {
     g.add(tube([
       [46, EC.y + 16, EC.z], [110, EC.y + 22, EC.z + 2], [182, EC.y + 6, EC.z + 12], [230, HY + 60, -(HW + 6)],
-      [246, HY + 14, -98], [248, 228, -40], [248, 226, 60], [234, 222, 140], [176, 214, IN.z + 34],
-      [110, EV.y + 4, IN.z + 22], [IN.x + 56, EV.y, IN.z + 2],
+      [246, HY + 14, -98], [248, 228, -40], [248, 226, 60], [236, 222, 150], [190, 218, 214],
+      [124, 210, 232], EP,
     ], 13, M.stainless, { cap: false, seg: 160 }));
-    g.add(put(cyl('x', 22, 4, M.stainless, 24), IN.x + 57, EV.y, IN.z + 2));
+    g.add(put(cyl('x', 22, 4, M.stainless, 24), EP[0] + 1, EP[1], EP[2]));
     g.add(put(cyl('x', 20, 4, M.stainless, 24), 48, EC.y + 16, EC.z));
     g.add(put(box(10, 26, 22, M.steelDark, 2), 248, 214, 10));                                    // support bracket
   });
@@ -431,9 +435,9 @@ export function buildAncillaries(A, anim) {
   });
 
   // ───────────────────────── Hall sender G40 (camshaft position) ─────────────────────────
-  A.part('g40', { cut: true, explode: [-120, 340, 60], anchor: [-209, HY + 96, E.camZ + 10] }, (g) => {
-    g.add(put(box(10, 22, 30, M.plastic, 3), -209, HY + 96, E.camZ));
-    g.add(put(box(10, 12, 18, M.plasticGrey, 2), -209, HY + 84, E.camZ + 22));
+  A.part('g40', { cut: true, explode: [-120, 340, 60], anchor: [-201, HY + 96, E.camZ + 10] }, (g) => {
+    g.add(put(box(10, 22, 30, M.plastic, 3), -201, HY + 96, E.camZ));
+    g.add(put(box(10, 12, 18, M.plasticGrey, 2), -201, HY + 84, E.camZ + 22));
     g.add(put(hex('x', 4.5, 4, M.steel), -215, HY + 92, E.camZ - 10));
   });
 }

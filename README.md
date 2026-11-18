@@ -33,6 +33,7 @@ Then open http://localhost:5173.
 ```bash
 npm run smoke              # headless build check: part sizes, belt length, kinematics
 node scripts/check-data.mjs  # every part has data, every connection points to a real part
+node scripts/overlap.mjs    # lists pairs of parts that run through each other
 npm run build              # production build in dist/
 ```
 

@@ -314,9 +314,9 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
   // ═════════════════════════ oil lines ═════════════════════════
   // feed: steel pipe from the oil filter module round the gearbox end (ETKA item 9, 038 145 771 AG)
   T('turboOilFeed', [0, 110, -70], { anchor: [TX + 60, 244, TZ + 40] }, (t, g) => {
-    g.add(tube([[OF.x + 30, 120, 150], [190, 196, 140], [236, 204, 70], [236, 204, -70], [198, 216, -128], [60, 236, -150], [TX + 20, 244, TZ + 16], [TX - 8, TY + 46, TZ]], 3.4, M.steel, { radial: 8, seg: 140 }));
+    g.add(tube([[OF.x + 30, 120, 150], [190, 190, 140], [254, 194, 70], [254, 194, -70], [206, 214, -128], [60, 236, -150], [TX + 20, 244, TZ + 16], [TX - 8, TY + 46, TZ]], 3.4, M.steel, { radial: 8, seg: 140 }));
     piece(t, [0, -36, 0], (p) => p.add(put(hex('y', 7, 9, M.steelDark), -8, 43, 0), put(cyl('y', 4.2, 8, M.steelDark, 12), -8, 36, 0)));   // threaded union M10×1 / M14×1.5
-    for (const p of [[236, 204, 0], [140, 226, -140]]) g.add(put(box(12, 10, 10, M.steelDark, 2), ...p));   // pipe clips
+    for (const p of [[254, 194, 0], [140, 226, -140]]) g.add(put(box(12, 10, 10, M.steelDark, 2), ...p));   // pipe clips
     g.add(put(hex('z', 6, 8, M.steelDark), OF.x + 30, 120, 148));
   });
   // return: flanged pipe down into the block (ETKA item 5C, 038 145 736 C)

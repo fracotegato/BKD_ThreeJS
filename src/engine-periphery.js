@@ -101,23 +101,23 @@ export function buildPeriphery(A) {
   });
 
   // ───────────────────────── Pressure pipe: turbocharger → charge air cooler ─────────────────────────
-  P('boostPipe', { cut: true, explode: [260, -60, -200], anchor: [520, 262, 40] }, (g) => {
+  P('boostPipe', { cut: true, explode: [260, -60, -200], anchor: [608, 282, 40] }, (g) => {
     const a = [[-104, 128, -284], [-84, 110, -296], [-30, 104, -300], [40, 104, -299]];
-    const b = [[40, 104, -299], [150, 106, -298], [330, 135, -292], [450, 205, -240], [505, 250, -120], [530, 255, 150], [552, 240, 330], [560, 170, 440], [562, 60, 470]];
+    const b = [[40, 104, -299], [150, 106, -298], [330, 135, -292], [470, 200, -262], [574, 236, -190], [608, 250, -60], [608, 252, 130], [584, 240, 330], [566, 170, 440], [562, 60, 470]];
     const c = [[562, 60, 470], [560, -30, 490], [540, -80, 505], [RX + IC.w / 2 + 80, -85, IC.z - 2]];
     g.add(tube(a, 28, M.hose, { cap: false, radial: 18 }), tube(b, 26, M.plastic, { cap: false, seg: 160, radial: 18 }), tube(c, 28, M.hose, { cap: false, radial: 18 }));
     plugCoupling(g, a[0], a[1], 28); plugCoupling(g, a.at(-1), a.at(-2), 28);                 // turbocharger, pipe
     plugCoupling(g, c[0], c[1], 28); plugCoupling(g, c.at(-1), c.at(-2), 28);                 // pipe, charge air cooler
     // pulsation damper on the rising section
-    g.add(put(sphere(36, M.plastic, 0.8), 596, 150, 444));
-    g.add(put(cyl('x', 13, 22, M.plastic, 16), 578, 150, 444));
-    for (const p of [[505, 250, -120], [556, 205, 395]]) g.add(put(box(34, 8, 22, M.steelDark, 2), p[0], p[1] + 30, p[2]));   // brackets
+    g.add(put(sphere(36, M.plastic, 0.8), 604, 150, 446));
+    g.add(put(cyl('x', 13, 22, M.plastic, 16), 586, 150, 446));
+    for (const p of [[608, 250, -60], [574, 205, 395]]) g.add(put(box(34, 8, 22, M.steelDark, 2), p[0], p[1] + 30, p[2]));   // brackets
   });
 
   // ───────────────────────── Air filter housing ─────────────────────────
   // Front left of the engine bay (seen from the front: right-hand front), ahead of the battery.
   const AB = { x: 415, y: 370, z: 165, sx: 260, sy: 140, sz: 180 };
-  const MAFX = 300;                                              // axis of the air mass meter and the hose behind it
+  const MAFX = 308;                                              // axis of the air mass meter and the hose behind it
   P('airbox', { casing: true, explode: [380, 220, 200], anchor: [AB.x + 40, AB.y + 78, AB.z + 40] }, (g) => {
     g.add(put(box(AB.sx, 80, AB.sz, M.plastic, 16), AB.x, AB.y - 30, AB.z));                  // lower half
     g.add(put(box(AB.sx + 6, 56, AB.sz + 6, M.plastic, 18), AB.x, AB.y + 42, AB.z));          // lid
@@ -246,7 +246,7 @@ export function buildPeriphery(A) {
     g.add(put(box(10, 26, 24, M.steelDark, 2), 300, 268, 214));                                   // hose bracket
   });
   P('hoseBottom', { cut: true, explode: [120, -200, 240], anchor: [170, -18, 304] }, (g) => {
-    coupled(g, [[radX, -95, RAD.z - 52], [448, -92, 372], [330, -70, 318], [170, -40, 300], [40, -25, 292], [-28, 30, 246], [-38, 92, 190], [-30, 120, 147]], 20);
+    coupled(g, [[radX, -95, RAD.z - 52], [448, -92, 372], [330, -72, 334], [170, -48, 340], [40, -30, 332], [-30, 24, 272], [-40, 92, 196], [-30, 120, 147]], 20);
     g.add(put(cyl('y', 9, 26, M.plastic, 14), 444, -70, 368));                                    // radiator outlet coolant temperature sender G83
     plug(g, [444, -52, 368], M.green);
     g.add(put(torus('z', 16.6, 2, M.rubber), -30, 120, 146));                                     // O-ring 32 × 4 in the coupling
@@ -264,7 +264,7 @@ export function buildPeriphery(A) {
     g.add(put(cyl('z', 9, 18, M.steelDark, 16), 60, 60, 106), put(cyl('z', 9, 16, M.castIron, 16), 150, 40, 90));  // stubs: pipe branch, cylinder block
     hose(g, [[46, 6, 190], [40, 30, 152], [60, 58, 116]], 11.5);                                      // item 15: oil cooler → coolant pipe
     hose(g, [[130, 6, 190], [152, 20, 150], [150, 40, 99]], 11.5);                                    // item 16: oil cooler → cylinder block
-    hose(g, [[230, HY + 52, -50], [210, 340, -85], [130, 410, -135], [-20, 428, -152], [-60, EC.y + 60, EC.z]], 13.5);   // item 44: flange → EGR cooler
+    hose(g, [[257, HY + 34, -20], [278, 290, -50], [262, 330, -112], [220, 372, -140], [130, 410, -142], [-20, 428, -152], [-60, EC.y + 60, EC.z]], 13.5);   // item 44: flange → EGR cooler
   });
   P('heaterHoses', { explode: [200, 160, -260], anchor: [268, 300, -250] }, (g) => {
     // item 45: EGR cooler → heat exchanger (feed), over the intake pipe to the bulkhead
@@ -277,14 +277,14 @@ export function buildPeriphery(A) {
   });
   P('ventLines', { explode: [0, 260, -120], anchor: [-40, 446, -130] }, (g) => {
     const m = M.hose;
-    g.add(tube([[-240, 432, -138], [-100, 436, -130], [130, 424, -118], [206, 356, -80]], 4, M.steelDark, { radial: 8, tension: 0.3, seg: 60 }));   // item 38: vent pipe behind the head cover
+    g.add(tube([[-204, 432, -138], [-100, 436, -130], [130, 424, -118], [206, 356, -80]], 4, M.steelDark, { radial: 8, tension: 0.3, seg: 60 }));   // item 38: vent pipe behind the head cover
     for (const x of [-170, 0, 110]) g.add(put(box(8, 12, 12, M.steelDark, 2), x, 430, -124));       // brackets 7.2 × 6.5 with M6 × 15
-    for (const dz of [0, 15]) line(g, [[206, 356, -80 + dz], [220, 320, -62 + dz], [228, HY + 60, -52 + dz]], 7, m);   // item 48: twin hose from the flange
-    line(g, [[-240, 432, -138], [-272, 434, -134], [-300, 432, -128]], 7, m);                      // item 25
+    for (const dz of [0, 15]) line(g, [[206, 356, -80 + dz], [206, 346, -44 + dz], [214, HY + 54, 0 + dz]], 7, m);   // item 48: twin hose from the flange
+    line(g, [[-204, 432, -138], [-252, 474, -134], [-300, 440, -128]], 7, m);                      // item 25
     line(g, [[RX - RAD.w / 2 - 14, 300, RAD.z - 36], [-262, 330, 380], [-300, 362, 200], [-330, 404, 0], [-312, 440, 40], [-300, 432, -128]], 7, m);   // item 24: radiator vent
     g.add(put(cyl('x', 5, 26, M.plastic, 10), -300, 432, -128), put(cyl('z', 5, 18, M.plastic, 10), -300, 432, -120));   // item 26: distributor 8 × 8 × 8
     line(g, [[-311, 432, -128], [-322, 446, -90], [-330, 444, -52]], 7, m);                        // item 49: to the tank
-    for (const p of [[-262, 330, 380], [-330, 404, 0], [214, 336, -70], [-240, 432, -138], [-289, 432, -128], [-311, 432, -128]]) clamp(g, p, [p[0] + 1, p[1], p[2]], 7, 0);   // spring band clamps 14 × 12
+    for (const p of [[-262, 330, 380], [-330, 404, 0], [207, 350, -60], [-208, 434, -138], [-289, 432, -128], [-311, 432, -128]]) clamp(g, p, [p[0] + 1, p[1], p[2]], 7, 0);   // spring band clamps 14 × 12
   });
   P('expansionTank', { explode: [-300, 200, -160], anchor: [-385, 478, -160] }, (g) => {
     const c = [-372, 395, -30];
@@ -341,31 +341,31 @@ export function buildPeriphery(A) {
     g.add(put(cyl('z', 10, 24, M.tank, 16), 300, 459, -60), put(cyl('z', 12, 4, M.plastic, 16), 300, 459, -60));   // non-return valve in the servo pipe
     for (const z of [-140, -260]) g.add(put(box(12, 10, 12, M.plastic, 2), 308, 446 + (z + 260) * 0.05, z));       // pipe clips
     g.add(put(sphere(6.5, M.plastic), 264, 460, 40));                                                               // T-piece
-    vl([[264, 458, 40], [248, 440, 120], [208, 374, 182], [176, 353, 192]]);                                        // supply to the valve unit
+    vl([[264, 458, 40], [248, 440, 120], [208, 386, 184], [176, 369, 192]]);                                        // supply to the valve unit
     g.add(put(cyl('y', 7, 18, M.tank, 14), 232, 414, 148), put(cyl('y', 8.5, 3, M.plastic, 14), 232, 414, 148));    // non-return valve (131-080, item 16)
-    g.add(put(box(66, 9, 9, M.plasticGrey, 2), 172, 352, 194));                                                     // hose connector strip on the valve unit (item 27)
-    vl([[172, 350, 196], [120, 331, 178], [-100, 331, 178], [-168, 345, 212], [-176, 352, 222]]);                   // to the vacuum reservoir
-    vl([[194, 350, 194], [236, 330, 122], [252, 318, 0], [250, 316, -100], [200, 312, -190], [60, 305, -238], [-30, 280, -252], [-62, 200, -256], [-84, 150, -240], [-92, 136, -222]]);   // N75 → turbocharger actuator
-    vl([[150, 348, 194], [90, 290, 206], [-30, 232, 198], [-56, 206, 188], [-58, HY - 40, 180]]);                    // N18 → EGR valve
-    vl([[166, 346, 198], [230, 336, 126], [246, 331, 0], [243, 335, -95], [170, 330, -165], [60, 318, -170], [30, 312, -162]]);   // N345 → EGR cooler flap
-    vl([[200, 346, 198], [240, 336, 186], [272, 326, 150], [296, 322, 112]]);                       // vent hose to the air filter housing
+    g.add(put(box(66, 9, 9, M.plasticGrey, 2), 172, 368, 194));                                                     // hose connector strip on the valve unit (item 27)
+    vl([[172, 366, 196], [120, 331, 178], [-100, 331, 178], [-168, 345, 212], [-176, 352, 222]]);                   // to the vacuum reservoir
+    vl([[194, 366, 194], [236, 330, 122], [252, 318, 0], [250, 316, -100], [200, 312, -190], [60, 305, -238], [-30, 280, -252], [-62, 200, -256], [-84, 150, -240], [-92, 136, -222]]);   // N75 → turbocharger actuator
+    vl([[150, 364, 194], [70, 306, 222], [-20, 268, 240], [-52, 240, 242], [-58, 230, 238]]);                    // N18 → EGR valve
+    vl([[166, 362, 198], [230, 336, 126], [246, 331, 0], [243, 335, -95], [170, 330, -165], [60, 318, -170], [30, 312, -162]]);   // N345 → EGR cooler flap
+    vl([[200, 362, 198], [240, 336, 186], [272, 326, 150], [296, 322, 112]]);                       // vent hose to the air filter housing
   });
 
   // ───────────────────────── Engine wiring loom ─────────────────────────
   P('loom', { cut: true, explode: [60, 460, 120], anchor: [-40, 380, 156] }, (g) => {
-    const trunk = [[286, 322, -385], [282, 320, -280], [276, 318, -150], [274, 318, -40], [272, 328, 60], [264, 356, 136], [225, 370, 160], [190, 367, 154], [0, 366, 152], [-190, 366, 152], [-214, 352, 138]];
+    const trunk = [[322, 326, -385], [306, 322, -280], [278, 318, -150], [274, 318, -40], [272, 328, 60], [264, 356, 136], [225, 370, 160], [190, 367, 154], [0, 366, 152], [-186, 366, 152], [-200, 352, 138]];
     g.add(tube(trunk, 10, M.loom, { cap: true, seg: 200, radial: 12, tension: 0.3 }));
-    g.add(put(box(40, 30, 14, M.plastic, 4), 286, 322, -390));                                // bulkhead grommet towards engine control unit J623
+    g.add(put(box(40, 30, 14, M.plastic, 4), 322, 326, -390));                                // bulkhead grommet towards engine control unit J623
     for (const x of [140, 20, -100]) g.add(put(box(14, 26, 14, M.plastic, 3), x, 356, 150));  // clips on the intake manifold
     const br = (pts) => { line(g, pts, 3.4, M.loom); plug(g, pts.at(-1)); };
     br([[274, 318, -40], [250, 372, -22], [216, 398, 14], [200, HY + 160, 26]]);              // unit injectors + glow plugs (central connector)
     br([[274, 318, -44], [254, 322, -46], [230, HY + 74, -42]]);                              // G62
-    br([[190, 367, 154], [178, 360, 170], [172, HY + 106, 178]]);                             // N18 / N345 / N75
+    br([[190, 367, 154], [178, 372, 172], [172, HY + 122, 178]]);                             // N18 / N345 / N75
     line(g, [[140, 366, 152], [146, 342, 142], [145, HY + 91, 134]], 3.4, M.loom);            // glow plug rail
-    br([[60, 366, 152], [64, 330, 186], [72, 250, 204], [70, 172, 196]]);                     // V157
-    br([[-60, 366, 152], [-70, 320, 190], [-100, 220, 262], [-120, 150, 334]]);               // G31 / G42
-    br([[-110, 366, 152], [-112, 320, 192], [-112, 262, 238]]);                               // alternator DF / L
-    br([[-214, 352, 138], [-214, 345, 110], [-212, HY + 104, E.camZ + 8]]);                   // G40
+    br([[60, 366, 152], [66, 330, 204], [74, 262, 256], [72, 206, 268]]);                     // V157
+    br([[-60, 366, 152], [-50, 330, 204], [-88, 232, 292], [-120, 150, 348]]);               // G31 / G42
+    br([[-122, 366, 152], [-130, 320, 198], [-124, 268, 238]]);                               // alternator DF / L
+    br([[-200, 352, 138], [-200, 345, 110], [-200, HY + 104, E.camZ + 8]]);                   // G40
     br([[264, 356, 136], [240, 300, 128], [228, 200, 118], [214, 80, 108], [208, 46, 100]]);  // G28
     br([[228, 200, 118], [290, 186, 142], [326, 176, 158]]);                                  // starter terminal 50
     br([[273, 322, 20], [258, 380, 8], [272, 432, 12], [296, 438, 16]]);                      // G70
@@ -408,7 +408,7 @@ export function buildPeriphery(A) {
     const plus = [BT.x - 50, BT.y + BT.sy / 2 + 14, BT.z + 96];
     const minus = [BT.x + 50, BT.y + BT.sy / 2 + 14, BT.z + 96];
     line(g, [plus, [384, 506, 20], [376, 470, 44], [372, 330, 52], [380, 250, 90], [404, 192, 140], [412, 174, 144]], 6.5, M.red);   // battery + → starter
-    line(g, [[412, 176, 146], [330, 150, 220], [150, 166, 264], [20, 172, 270], [-80, 200, 272], [-112, 216, 262]], 5, M.red);         // starter → alternator B+
+    line(g, [[412, 176, 146], [330, 150, 224], [200, 72, 300], [40, 50, 318], [-72, 56, 300], [-112, 150, 270], [-112, 216, 262]], 5, M.red);         // starter → alternator B+
     g.add(put(hex('x', 6, 8, M.copper), -110, 216, 262));
     line(g, [minus, [500, 506, 20], [520, 470, 44], [540, 330, 50], [552, 220, 54], [524, 128, 60]], 6.5, M.rubber);                // battery − → gearbox
     g.add(put(box(26, 4, 16, M.copper, 1), 520, 124, 56));
