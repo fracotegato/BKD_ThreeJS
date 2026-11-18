@@ -1,0 +1,4 @@
+Surface textures from ambientCG (https://ambientcg.com), licensed CC0 1.0 (public domain).
+Sets, 1K JPG: Metal016 (cast surfaces), Metal009 (machined steel), Rust007 (exhaust manifold, turbine),
+Metal063 (exhaust hardware), Plastic012A (moulded plastic), Rubber004 (rubber), Fabric031 (hoses, loom, braid).
+Only the NormalGL, Roughness and (for Rust007, Metal063) Color maps are kept.

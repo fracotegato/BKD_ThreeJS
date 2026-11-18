@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2.0 TDI BKD – interactive engine model</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="stage">
+    <canvas id="c" aria-label="3D model of the 2.0 TDI BKD engine"></canvas>
+    <div id="labels"></div>
+  </div>
+
+  <header id="brand">
+    <div class="mark">
+      <span class="big">2.0 TDI</span><span class="code">BKD</span>
+    </div>
+    <div class="sub">103 kW · 320 Nm · 1968 cm³ · 16 V unit injector</div>
+    <div class="scale"><i></i>Model scale 1 : 1 · units mm · floor grid 100 mm</div>
+  </header>
+
+  <nav id="systems" aria-label="Engine systems"></nav>
+
+  <aside id="panel" aria-live="polite"></aside>
+
+  <div id="bottom">
+  <div id="context" aria-live="polite"></div>
+  <div id="hud" hidden>
+    <div class="angle"><b id="hudAngle">0°</b><span>crank angle</span></div>
+    <div class="cyls" id="hudCyls"></div>
+  </div>
+
+  <div id="toolbar" role="toolbar" aria-label="View controls">
+    <div class="grp" data-cap="View">
+      <button data-act="left" title="Turn left" aria-label="Turn left"><svg viewBox="0 0 24 24"><path d="M4 5v6h6M4.5 11a8 8 0 1 1 2.2 6.6"/></svg></button>
+      <button data-act="right" title="Turn right" aria-label="Turn right"><svg viewBox="0 0 24 24"><path d="M20 5v6h-6M19.5 11a8 8 0 1 0-2.2 6.6"/></svg></button>
+      <button data-act="out" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button data-act="in" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+      <button data-act="home" title="Reset view (Home)" aria-label="Reset view"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h11v-9"/></svg></button>
+    </div>
+    <div class="grp" data-cap="Pull apart">
+      <label class="slider" title="How far the parts are pulled apart"><span id="explodeLbl">Explode all</span><input id="explode" type="range" min="0" max="100" value="0" /></label>
+    </div>
+    <div class="grp toggles views" data-cap="Take one assembly apart">
+      <button class="tg" data-tg="crank" title="Crankcase: drop the crankshaft, bearing shells, thrust washers, caps, bolts, oil pump and sump out of the block (1)">Crankcase</button>
+      <button class="tg" data-tg="block" title="Cylinder block: pull out pistons, rings, pins, connecting rods, shells, caps and bolts (2)">Block</button>
+      <button class="tg" data-tg="head" title="Cylinder head: lift off cover, camshafts, rockers, injectors and pull the valves with springs, collets, seals and guides (3)">Head</button>
+      <button class="tg" data-tg="injector" title="Unit injectors: pump piston, spring, solenoid valve, nozzle spring, needle, nozzle, nut and seals (4)">Injector</button>
+      <button class="tg" data-tg="turbo" title="Isolate the turbocharger and pull its components apart along the shaft (T)">Turbo</button>
+      <button class="tg" data-tg="gearbox" title="Isolate the 02Q gearbox and pull every shaft, gear, synchroniser and bearing apart (G)">Gearbox</button>
+      <button class="tg" data-tg="clutch" title="Isolate the dual-mass flywheel, clutch and hydraulic clutch control and pull them apart (K)">Clutch</button>
+    </div>
+    <div class="grp toggles" data-cap="Show">
+      <button class="tg on" data-tg="isolate" title="When an assembly or a system is chosen, hide everything else instead of ghosting it (I)">Isolate</button>
+      <button class="tg" data-tg="xray" title="Make housings transparent (X)">X-ray</button>
+      <button class="tg" data-tg="cut" title="Cut the engine open along the crankshaft (C)">Cutaway</button>
+      <button class="tg on" data-tg="covers" title="Show or remove covers and belt guard (V)">Covers</button>
+      <button class="tg on" data-tg="periph" title="Show or remove the parts around the engine: coolers, hoses, airbox, battery, gearbox (P)">Car parts</button>
+      <button class="tg on" data-tg="labels" title="Show labels (L)">Labels</button>
+      <button class="tg" data-tg="dims" title="Show dimensions in mm (D)">Dimensions</button>
+    </div>
+    <div class="grp" data-cap="Engine">
+      <button class="run" data-act="run" title="Run the engine in slow motion (Space)"><svg viewBox="0 0 24 24"><path class="play" d="M8 5.5v13l11-6.5z"/><path class="pause" d="M8 5.5v13M16 5.5v13"/></svg><span>Run</span></button>
+      <label class="slider rpm"><span id="rpmVal">30 rpm</span><input id="rpm" type="range" min="6" max="240" value="30" /></label>
+    </div>
+  </div>
+  </div>
+
+  <div id="tip" hidden></div>
+  <div id="loader"><div><b>2.0 TDI</b><span>building the engine…</span></div></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
