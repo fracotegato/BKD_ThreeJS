@@ -90,6 +90,12 @@ button { cursor: pointer; }
 #panel td { padding: 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; }
 #panel td:first-child { color: var(--muted); width: 44%; padding-right: 10px; }
 #panel td:last-child { font-variant-numeric: tabular-nums; }
+#panel .pn-h { margin: 18px 0 2px; font: 600 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#panel .pn td:first-child { width: 42%; color: var(--text); }
+#panel .pn code { display: block; font: 600 12.5px var(--mono); color: var(--accent); white-space: nowrap; }
+#panel .pn code.alt { font-weight: 400; color: var(--muted); }
+#panel .pn small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+#panel .pn-none { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
 #panel .note { font-size: 12px; color: var(--muted); border-left: 2px solid var(--line-strong); padding-left: 10px; margin-top: 14px; }
 #panel .hint { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12.5px; color: #b9c1cc; margin-top: 4px; }
 #panel kbd { justify-self: start; font: 11px var(--mono); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; color: var(--text); white-space: nowrap; }

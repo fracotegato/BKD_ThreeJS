@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "check": "node scripts/smoke.mjs && node scripts/check-data.mjs",
-    "overlap": "node scripts/overlap.mjs 0.02"
+    "overlap": "node scripts/overlap.mjs 0.02",
+    "numbers": "node scripts/parts-table.mjs"
   },
   "keywords": [],
   "author": "",

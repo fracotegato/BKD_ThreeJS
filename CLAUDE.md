@@ -10,6 +10,7 @@ Live at https://fracotegato.github.io/BKD_ThreeJS/ — repository `fracotegato/B
 npm run dev        # dev server, http://localhost:5173 (strict port)
 npm run check      # smoke build check + part-data check — run after every geometry or data change
 npm run overlap    # parts that run through each other (about 20 s); keep the list from growing
+npm run numbers    # rewrite PART-NUMBERS.md from src/parts-numbers.js (run after changing part numbers)
 npm run build      # production build into dist/
 ```
 
@@ -41,8 +42,10 @@ Pushing to `main` runs the checks and deploys to GitHub Pages (`.github/workflow
 | `src/engine-detail.js` | Bearing shells, caps, bolts, rings, pins, valve small parts, unit injector parts; tags parts for the engine exploded views |
 | `src/engine.js` | Assembles everything, kinematics (`update`), exploded-view offsets (`setExplode`) |
 | `src/parts-data*.js` | Name, system, description, specs, connections per part. Later files override earlier entries (see the `Object.assign` near the end of `parts-data.js`) |
+| `src/parts-numbers.js` | Part numbers per part (`NUMBERS`) and parts with no number of their own (`NONE`); merged into `PARTS` as `pn` / `noPn` |
 | `src/main.js` | Scene, camera, picking, labels, panel, toolbar, views, status line |
-| `scripts/` | `smoke.mjs`, `check-data.mjs`, `overlap.mjs` |
+| `scripts/` | `smoke.mjs`, `check-data.mjs`, `overlap.mjs`, `parts-table.mjs` |
+| `PART-NUMBERS.md` | Generated table of all part numbers. Do not edit by hand |
 
 ## How parts and views work
 
@@ -77,6 +80,20 @@ Pushing to `main` runs the checks and deploys to GitHub Pages (`.github/workflow
 - The control strip is `#mech` in `index.html`, filled by `MECH` / `renderMech` / `syncMech` in `main.js`, shown only in the
   turbo, clutch and gearbox views. `VIEWS[view].shell` lists the parts its housing button hides (`state.shell`, key H).
 - Travel figures, vane angles and the position of the vane crank are estimates (≈); the tooth counts are from the catalogue.
+
+## Part numbers
+
+- One record per model part in `src/parts-numbers.js`: `e(number, what, qty, 'illustration', item, { alt, note })` for rows
+  read in ETKA, `l(...)` for numbers that only come from a seller's listing. A part with no number of its own goes in `NONE`
+  with the reason. The panel shows them under Specifications, and the part search finds them.
+- `npm run check` validates the format and prints how many parts are still open; `node scripts/check-data.mjs --open` names them.
+- Reading ETKA in bulk: open one catalogue page in the owner's Chrome, then `fetch()` the other pages from that tab
+  (same origin) and parse the `<tr>` rows: columns are item, name, extra information, quantity, use, part number. Tool
+  output is cut short, so write the rows into the page and read them with `get_page_text`. The site's firewall blocks the
+  browser after about 40 requests in a few minutes: keep batches small and several seconds apart. When it blocks, stop and
+  ask the owner to open a catalogue page themself.
+- Rows whose "use" names other engine codes and not BKD are not for this engine. BKD rows often read `AZV,BKD`.
+  The gearbox codes for this model are GRF / HDV.
 
 ## Sources of truth, in order
 

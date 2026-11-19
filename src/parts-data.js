@@ -3,6 +3,7 @@
 
 import { DRIVETRAIN } from './parts-data-drivetrain.js';
 import { ENGINE_DETAIL, ENGINE_LINKS, ENGINE_NOTES, COOLING, LINES, INJECTOR, BAY } from './parts-data-engine.js';
+import { NUMBERS, NONE } from './parts-numbers.js';
 
 export const SYSTEMS = {
   mech: { name: 'Engine mechanics', color: '#aab4c3' },
@@ -644,6 +645,9 @@ export const PARTS = {
 };
 
 Object.assign(PARTS, DRIVETRAIN, ENGINE_DETAIL, COOLING, LINES, INJECTOR, BAY);
+// part numbers: p.pn = rows from parts-numbers.js, p.noPn = why a part has no number of its own
+for (const [id, rows] of Object.entries(NUMBERS)) if (PARTS[id]) PARTS[id].pn = rows;
+for (const [id, why] of Object.entries(NONE)) if (PARTS[id]) PARTS[id].noPn = why;
 
 // Connections from the engine's own parts to the parts around it.
 const MORE_LINKS = {

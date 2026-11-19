@@ -628,7 +628,9 @@ function partsListHTML() {
   let html = '';
   for (const [k, s] of Object.entries(SYSTEMS)) {
     if (state.system && state.system !== k) continue;
-    const items = Object.entries(PARTS).filter(([, p]) => p.sys === k && (!q || p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q)));
+    const qn = q.replace(/\s+/g, '');      // part numbers are found with or without their spaces
+    const items = Object.entries(PARTS).filter(([, p]) => p.sys === k && (!q || p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q)
+      || (qn.length > 2 && (p.pn || []).some((r) => [r.n, ...(r.alt || [])].some((n) => n.replace(/\s+/g, '').toLowerCase().includes(qn))))));
     if (!items.length) continue;
     html += `<h3 style="--c:${s.color}"><i></i>${s.name}</h3>`;
     html += items.map(([id, p]) => `<button data-part="${id}" style="--c:${s.color}"><i></i>${p.name}${p.code ? `<code>${p.code}</code>` : ''}</button>`).join('');
@@ -705,7 +707,12 @@ function renderPanel() {
       body = `<p>${p.desc}</p><div class="env">Envelope as modelled <b>${mm(sz.x)} × ${mm(sz.z)} × ${mm(sz.y)} mm</b> (L × W × H)</div>`;
     } else if (state.partTab === 'specs') {
       const rows = [...p.specs, ['Envelope (model)', `${mm(sz.x)} × ${mm(sz.z)} × ${mm(sz.y)} mm`]];
+      // part numbers (src/parts-numbers.js): one row per catalogue item this model part covers
+      const from = (r) => (r.src === 'etka' ? `ETKA ${r.etka}${r.item ? `, item ${r.item}` : ''}` : 'parts listing, not checked in the catalogue');
+      const pn = p.pn ? `<table class="pn">${p.pn.map((r) => `<tr><td><code>${r.n}</code>${(r.alt || []).map((a) => `<code class="alt">${a}</code>`).join('')}</td><td>${r.what}${r.qty > 1 ? ` · ${r.qty} ×` : ''}<small>${from(r)}${r.note ? ` · ${r.note}` : ''}</small></td></tr>`).join('')}</table>`
+        : `<p class="pn-none">${p.noPn ? `No number of its own: ${p.noPn}` : 'Not looked up in the catalogue yet.'}</p>`;
       body = `<table>${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>
+        <h4 class="pn-h">Part numbers</h4>${pn}
         <div class="note">“SSP 316” marks figures taken from the Volkswagen self-study programme; “≈” marks estimates used for the model.</div>`;
     } else {
       body = `<div class="links">${p.links.map(([t, rel]) => {
@@ -750,7 +757,7 @@ function renderPanel() {
     body = `<table>${ENGINE.data.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>
       <div class="note">Technical data from Volkswagen Self-study programme 316 (technical status 08/03).</div>`;
   } else {
-    body = `<input class="search" type="search" placeholder="Search parts or codes (e.g. G28)" value="${state.query.replace(/"/g, '&quot;')}" aria-label="Search parts" />
+    body = `<input class="search" type="search" placeholder="Search parts, codes or part numbers" value="${state.query.replace(/"/g, '&quot;')}" aria-label="Search parts" />
       <div class="plist" id="plist">${partsListHTML()}</div>`;
   }
   const head = ph ? `<div class="head m-home">${grab}</div>` : `<div class="head">

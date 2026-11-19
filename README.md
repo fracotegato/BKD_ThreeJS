@@ -35,6 +35,7 @@ Then open http://localhost:5173.
 ```bash
 npm run check              # build check (part sizes, belt length, kinematics) and part-data check
 npm run overlap            # lists pairs of parts that run through each other
+npm run numbers            # rewrites PART-NUMBERS.md from src/parts-numbers.js
 npm run build              # production build in dist/
 ```
 
@@ -53,6 +54,7 @@ Notes for working on this project with Claude Code are in `CLAUDE.md`.
 - Design facts follow the Volkswagen self-study programme 316, "The 2.0 ltr. TDI engine". The document itself is not part of this repository.
 - Tooth counts, bearing and bolt sizes, part order on the shafts, hose connections and clamp sizes follow the manufacturer's parts catalogue for the Golf 2004–2005.
 - Component positions were checked against photographs of a real engine.
+- Part numbers are listed in [PART-NUMBERS.md](PART-NUMBERS.md) and shown per part under Specifications. Most were read in the parts catalogue; a few come from sellers' listings and say so. Numbers vary with build date and equipment, so check against the vehicle before ordering.
 - Values marked ≈ in the part data are estimates. Pipe, hose and cable paths between their end points are modelled routes, and small-part sizes are scaled to fit; this is a teaching model, not a workshop reference.
 
 Surface textures are from [ambientCG](https://ambientcg.com) (CC0); see `public/textures/CREDITS.txt`.
