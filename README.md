@@ -6,7 +6,7 @@ Three.js visualization of the VW 2.0 TDI **BKD** engine as fitted to the Golf V:
 
 ## What you can do
 
-- Click any part or label for its description, specifications and connections (181 selectable parts).
+- Click any part or label for its description, specifications, part numbers and connections (181 selectable parts). The part search also finds part numbers.
 - Filter by system on the left: mechanics, valve gear, injection, charge air, turbocharger, gearbox, clutch, exhaust and EGR, cooling, lubrication, electrics, ancillaries.
 - Take one assembly apart at a time: crankcase, cylinder block, cylinder head, unit injectors, turbocharger, gearbox, clutch.
 - Explode the whole engine, cut it open along the crankshaft, or make the housings transparent.
@@ -47,7 +47,16 @@ Notes for working on this project with Claude Code are in `CLAUDE.md`.
 
 - Three.js 0.170 and Vite. All geometry is procedural; there are no imported meshes.
 - `src/engine-core.js` engine, `engine-ancillaries.js` ancillaries, `engine-turbo.js` turbocharger, `engine-gearbox.js` gearbox and clutch, `engine-periphery.js` engine bay, `engine-detail.js` small parts and the unit injectors.
-- `src/parts-data*.js` hold the text, specifications and connections of every part.
+- `src/parts-data*.js` hold the text, specifications and connections of every part; `src/parts-numbers.js` holds the part numbers.
+- `engine.tick()` in `src/engine.js` moves the guide vanes, the clutch and the gear change; the control strip and the "Watch it work" buttons are in `src/main.js`.
+
+## Known limits
+
+- Part numbers: 127 of the 181 parts have one, 43 have none of their own (they are inside a unit the catalogue lists only complete), and 11 are still to be looked up. Those rows read "Not looked up yet" in [PART-NUMBERS.md](PART-NUMBERS.md).
+- The injector clamping piece in the model is probably wrong for this 16-valve engine: the catalogue lists two bolts per injector and no clamp.
+- Gear teeth are drawn straight and do not mesh tooth for tooth; the selector shaft in the switch unit does not move.
+- Travel figures of the mechanisms (vane swing, release travel, collar travel) are estimates.
+- The phone layout was checked in browser emulation, not on a real phone.
 
 ## Sources and accuracy
 

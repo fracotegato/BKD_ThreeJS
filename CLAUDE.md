@@ -4,6 +4,43 @@ Interactive, real-scale Three.js model of the VW 2.0 TDI engine **BKD** (Golf V)
 turbocharger, 02Q gearbox, clutch, and the engine-bay parts around them. Vite app, no backend.
 Live at https://fracotegato.github.io/BKD_ThreeJS/ — repository `fracotegato/BKD_ThreeJS`.
 
+## Where the project stands (19 November 2026)
+
+- 181 selectable parts, all with description, specifications and connections. Seven assembly exploded views, an
+  engine-wide exploded view, cutaway, X-ray, system filter, isolate, slow-motion four-stroke cycle.
+- Working mechanisms: guide vanes of the turbocharger, clutch from pedal to pressure plate, all gears of the 02Q,
+  each reachable with one click from the "Watch it work" toolbar group.
+- Part numbers: 127 parts with a number (125 read in ETKA, alternator and starter from listings), 43 with none of
+  their own, 11 open. `PART-NUMBERS.md` is the generated table.
+- Phone layout below 760 px with bottom navigation and sheets; desktop layout unchanged above it.
+- `npm run check` passes; `npm run overlap` reports 2 pairs (cover gasket / loom, loom / bearing frame).
+
+### Open work, most useful first
+
+1. **Finish the part numbers.** Still open: `glowPlugs`, `loom`, `battery`, `powerCables`, `frontPipe`, `fluidReservoir`,
+   `mainCapBolts`, `flywheelBolts`, `clutchBolts`, `housingBolts`, `gearboxPlugs`. Catalogue pages to read: `905000` glow plugs
+   (the BKD row may be filed under AZV only), `971009` and `971040` loom, `915000` battery, `971001` battery cables, `253095`
+   front silencer, `611015` reservoir (left-hand drive; `611010` was read and lists the right-hand-drive numbers), and
+   the standard-part rows (numbers starting `N`) of `103020`, `105030`, `141060`, `301045` for the bolts and plugs.
+   Also `903000` / `903001` alternator, `911000` starter and `959050` fan motors, to replace the two listing numbers.
+2. **Injector clamp.** The BKD catalogue page (130-035) lists two M6 × 88 bolts per injector and no clamping piece; the
+   model draws a clamping piece (`injClamp`). Check a photo of a 16-valve head and correct the geometry and text.
+3. **Air mass meter.** The catalogue gives `074 906 461 B`; the spec row for the hose size still cites a listing for
+   `03G 906 461 C`. Confirm which unit the car has before changing the text.
+4. **Selector mechanism.** The forks, rails and collars move with a gear change; the selector shaft and shift finger
+   in the switch unit do not.
+5. **Gear teeth** are drawn straight and are not phased to mesh; the real gears are helical.
+6. **Not verified on a real phone**, only in 375 × 812 emulation; landscape phone was not tried after the mechanism strip was added.
+7. **Layout items the owner has not confirmed against a photo:** route of the cold charge pipe, position of the vane
+   crank under the turbo bearing housing, slope of the intake manifold (48° is an estimate).
+
+### Assumptions recorded in the part numbers
+
+Each is written as a note on the row: which camshaft is inlet (item 1) and which exhaust (item 2); which flange shaft
+is left; the upper radiator hose (item 23, by elimination); the split of the charge-air hoses between the hot and the
+cold side; the vacuum reservoir, which the catalogue calls "damper" (`7M0 129 808`); the air filter housing, where
+three numbers are listed without an engine code.
+
 ## Commands
 
 ```bash
@@ -102,6 +139,12 @@ Pushing to `main` runs the checks and deploys to GitHub Pages (`.github/workflow
    Illustration pages are `/420/<number without dash>` and each embeds one exploded PNG. Useful ones:
    `121045` coolant hoses, `129050` air filter, `131080` EGR and vacuum, `145055` turbo, `145085` intercooler,
    `127020` fuel filter, `611070` servo vacuum pipe, `311042`–`311044` gearbox shafts, `141060` clutch, `253065` catalyst.
+   Also read for the part numbers: `103020` block and sump, `103065` head and cover, `105030` crank drive, `107000` pistons,
+   `109025` camshafts and valves, `109075` toothed belt, `115020` oil pump, `115070` oil filter, `121010` coolant pump,
+   `121080` flange, radiator and tank, `121090` fans, `130035` unit injectors, `145005` tandem pump, `260020` A/C compressor,
+   `260042` condenser, `301045` gear housing, `311092` switch unit and forks, `409030` differential, `711030` selector cables,
+   `721025` clutch pedal and hydraulics, `903060` belt and tensioner, `906030` senders, `919040` switches, `927040` reversing switch.
+   The list of every illustration page of a main group is at `/420/1` (engine) … `/420/9` (electrics).
    The site blocks automated browsers with a firewall check; it works in the owner's own Chrome, and if the
    check appears, ask the owner to open the page themself.
 3. **Photographs** of the real engine and engine bay. Study photos of a component before modelling or moving
@@ -129,10 +172,18 @@ Exploded catalogue drawings show what connects to what, not where a hose runs: r
 - After a change: `npm run check`, then look at it in the browser from the angle of a reference photo.
   For anything that moves or adds parts, also `npm run overlap`.
 - The built-in preview pane throttles animation frames: wait several seconds before a screenshot, and the
-  loading overlay can linger. `window.__bkd` exposes `state`, `parts`, `select`, `setToggle`, `setSystem`,
-  `setRunning`, `goHome`, `camera`, `controls` for driving the page.
+  loading overlay can linger. `window.__bkd` exposes `state`, `engine` (with `ctl`, `drive`, `tick`), `parts`, `select`,
+  `setToggle`, `setSystem`, `setRunning`, `setSheet`, `goHome`, `camera`, `controls` for driving the page.
+  The pane is small: set the viewport to about 1500 × 900 before judging the desktop layout, and reset it afterwards.
+- Motion cannot be judged in the throttled pane. Check start and end poses there, and test logic headlessly:
+  build the engine in Node, set `engine.ctl`, call `engine.tick(1 / 60)` and `engine.update(theta)` in a loop, and print `engine.drive`.
 - Shell: in this Git Bash, heredocs that contain quotes fail. For multi-edit changes write a small Python
   patch script to a temp file and run it, or use the Edit tool.
+- Line endings: most files in `src/` and `index.html` have Windows line endings in the working copy (Git Bash `grep`
+  hides them). A patch script must read and write with `newline=''` and match on text with the endings normalised,
+  or multi-line patterns silently fail to match.
+- Features must be reachable from the first screen. The owner could not find the mechanism controls when they only
+  appeared after opening a view: a new capability needs a visible entry point and should start working with one click.
 - Desktop layout above 760 px must not change when working on the phone layout, and the reverse.
 - Report honestly what was verified, what is estimated and what was not done.
 
@@ -143,3 +194,7 @@ Exploded catalogue drawings show what connects to what, not where a hose runs: r
   the local git config). Do not change it to another identity, and keep personal names, e-mail addresses and
   local paths out of project files and commit messages.
 - Do not commit `node_modules`, `dist`, or local Claude settings.
+- After a push, check the deploy run and then the live page. `gh` is not installed here: the run's status is public at
+  `https://api.github.com/repos/fracotegato/BKD_ThreeJS/actions/runs?per_page=1`. Browsers keep the old page for a
+  few minutes, so open the live page with a throwaway query string (`?v=<commit>`) to see the new build, and tell
+  the owner to hard-refresh.
