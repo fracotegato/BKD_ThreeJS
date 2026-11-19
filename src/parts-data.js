@@ -481,13 +481,13 @@ export const PARTS = {
   vntVanes: {
     name: 'Guide vanes', short: 'Guide vanes', sys: 'turbo', label: 'inner',
     desc: 'The variable geometry itself. Eleven small vanes stand in a circle round the turbine wheel, each on a pivot pin that passes through the ring plate and ends in a short arm on the back. Turned nearly closed, the vanes leave narrow gaps: gas speeds up and hits the wheel at a flat angle, so boost builds at low engine speed. Turned open, they let a large gas flow through at high speed without over-speeding the turbo. Three spacer pins fix the gap to the housing wall so the vanes can move without leaking. The ring sits in the mouth of the turbine housing and is trapped there by the bearing housing.',
-    specs: [['Vanes', '11 (counted on a GT1749V nozzle ring)'], ['Vane height', '≈ 7 mm'], ['Pivot circle', '≈ Ø 62 mm'], ['Spacer pins', '3'], ['Typical fault', 'Vanes stuck by soot → over- or under-boost']],
+    specs: [['Vanes', '11 (counted on a GT1749V nozzle ring)'], ['Vane height', '≈ 7 mm'], ['Swing in this model', '≈ 34° between flat and steep'], ['Pivot circle', '≈ Ø 62 mm'], ['Spacer pins', '3'], ['Typical fault', 'Vanes stuck by soot → over- or under-boost']],
     links: [['vntUnison', 'vane arms sit in the slots of'], ['turbineHousing', 'seated in'], ['turbineWheel', 'directs gas onto'], ['turbo', 'held in place by']],
   },
   vntUnison: {
     name: 'Unison ring', sys: 'turbo', label: 'inner',
-    desc: 'Flat steel ring behind the nozzle ring, also called the adjusting ring. It has one slot per vane arm, so turning the ring a few degrees swings all eleven vanes together by exactly the same angle. Three rollers on the nozzle ring keep it centred. A lug on its rim is moved by the inner arm of the actuator crank.',
-    specs: [['Slots', '11, one per vane arm'], ['Travel', 'A few degrees of rotation'], ['Guided by', '3 rollers on the nozzle ring'], ['Driven by', 'Crank from the vacuum actuator']],
+    desc: 'Flat steel ring behind the nozzle ring, also called the adjusting ring. Its inner edge has one notch per vane arm, so turning the ring a few degrees swings all eleven vanes together by exactly the same angle. Three rollers on the nozzle ring keep it centred. A drive block on its face takes the pin of the actuator crank.',
+    specs: [['Notches', '11, one per vane arm'], ['Travel', '≈ 6° of rotation between flat and steep vanes (model)'], ['Guided by', '3 rollers on the nozzle ring'], ['Driven by', 'Crank from the vacuum actuator']],
     links: [['vntVanes', 'turns the vanes of'], ['vntActuator', 'turned by the crank of']],
   },
   turbineWheel: {
@@ -540,7 +540,7 @@ export const PARTS = {
   },
   vntActuator: {
     name: 'Vacuum actuator', short: 'Vane actuator', sys: 'turbo', label: 'inner',
-    desc: 'Vacuum unit that sets the guide vanes. A diaphragm pulls the control rod against a spring when solenoid valve N75 applies vacuum. The rod turns a small crank whose shaft passes through the housing; the inner arm of the crank moves the lug of the unison ring. With no vacuum the spring holds the vanes open (low boost, the safe position); full vacuum closes them for maximum boost at low revs. The engine control unit pulses N75 and watches charge pressure sender G31 to close the loop. A stop screw limits the smallest gap.',
+    desc: 'Vacuum unit that sets the guide vanes. A diaphragm pulls the control rod against a spring when solenoid valve N75 applies vacuum. The rod turns a small crank whose shaft passes through the housing; the inner arm of the crank moves the drive block of the unison ring. With no vacuum the spring holds the vanes open (low boost, the safe position); full vacuum closes them for maximum boost at low revs. The engine control unit pulses N75 and watches charge pressure sender G31 to close the loop. A stop screw limits the smallest gap.',
     specs: [['Type', 'Vacuum diaphragm unit with return spring'], ['Controlled by', 'Solenoid valve N75 (charge pressure control)'], ['No vacuum', 'Vanes open'], ['Full vacuum', 'Vanes closed'], ['Mounting', 'Bracket on the compressor housing'], ['Adjustment', 'Rod length and minimum-flow stop screw']],
     links: [['vntUnison', 'crank turns'], ['valveBlock', 'vacuum metered by N75 in'], ['vacuumLines', 'vacuum arrives through'], ['compressorHousing', 'bracket bolted to'], ['turbo', 'crank shaft passes through'], ['g31', 'loop closed by']],
   },
@@ -626,14 +626,14 @@ export const PARTS = {
   vntRod: {
     name: 'Control rod', sys: 'turbo', label: 'inner',
     desc: 'Thin steel rod from the diaphragm of the vacuum actuator to the outer lever of the vane crank. Its length, set with the adjusting nut, decides at what vacuum the vanes start to move.',
-    specs: [['Adjustment', 'Threaded end with lock nut'], ['Travel', '≈ 12 mm']],
+    specs: [['Adjustment', 'Threaded end with lock nut'], ['Travel', '≈ 9 mm in this model'], ['Pulled in', 'Vanes flat (full vacuum)'], ['Pushed out', 'Vanes steep (no vacuum)']],
     links: [['vntActuator', 'pulled by'], ['vntCrank', 'turns']],
   },
   vntCrank: {
     name: 'Vane crank', sys: 'turbo', label: 'inner',
-    desc: 'Small crank that carries the actuator movement into the hot turbine. The outer lever is pulled by the control rod; its shaft passes through a bush in the bearing housing flange; the inner arm ends in a pin that engages the lug of the unison ring. A stop screw limits how far the vanes can close.',
-    specs: [['Parts', 'Outer lever, shaft, inner arm with pin'], ['Bearing', 'Bush in the bearing housing'], ['Stop', 'Minimum-flow screw']],
-    links: [['vntRod', 'turned by'], ['vntUnison', 'pin moves the lug of'], ['turbo', 'shaft runs in a bush of']],
+    desc: 'Small crank that carries the actuator movement into the hot turbine. The outer lever is pulled by the control rod; its shaft passes through a bush in the bearing housing flange; the inner arm ends in a pin that sits in the drive block of the unison ring. A stop screw limits how far the vanes can close.',
+    specs: [['Parts', 'Outer lever, shaft, inner arm with pin'], ['Bearing', 'Bush in the bearing housing'], ['Stop', 'Minimum-flow screw'], ['Position and lever lengths', '≈, placed under the bearing housing']],
+    links: [['vntRod', 'turned by'], ['vntUnison', 'pin moves the drive block of'], ['turbo', 'shaft runs in a bush of']],
   },
   turboOilReturn: {
     name: 'Turbocharger oil return', short: 'Turbo oil return', sys: 'turbo', label: 'inner',
@@ -653,7 +653,7 @@ const MORE_LINKS = {
   turbineWheel: [['pistonRingT', 'groove carries'], ['journalBearingC', 'runs in'], ['shaftNut', 'thread takes']],
   turbineHousing: [['turbineClamps', 'held by'], ['catSeal', 'outlet sealed by'], ['nozzleRing', 'seats']],
   vntVanes: [['nozzleRing', 'pivot in']],
-  vntUnison: [['nozzleRing', 'centred by rollers on'], ['vntCrank', 'lug moved by']],
+  vntUnison: [['nozzleRing', 'centred by rollers on'], ['vntCrank', 'drive block moved by']],
   vntActuator: [['vntRod', 'pulls'], ['vntCrank', 'acts through']],
   thrustCollar: [['pistonRingC', 'groove carries'], ['shaftNut', 'clamped by']],
   thrustBearing: [['oilDeflector', 'oil caught by'], ['turboOilFeed', 'fed by']],

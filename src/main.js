@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildEngine, cycleAngle, STROKES } from './engine.js';
+import { GEARS, FINAL_DRIVE } from './engine-gearbox.js';
 import { cloneMat } from './helpers.js';
 import { PARTS, SYSTEMS, ENGINE } from './parts-data.js';
 
@@ -15,6 +16,7 @@ const state = {
   explode: 0, explodeTarget: 0, crank: false, block: false, head: false, injector: false, turbo: false, gearbox: false, clutch: false,
   viewT: { crank: 0, block: 0, head: 0, injector: 0, turbo: 0, gearbox: 0, clutch: 0 },
   isolate: true, spread: 1, running: false, rpm: 30,
+  shell: true, sweep: false,       // housings of the active assembly shown; guide vanes moving to and fro on their own
   tab: 'overview', partTab: 'overview', query: '',
 };
 // Phone layout (see style.css, "phone layout"): html.phone is set at 760 px width and below and on short landscape screens.
@@ -36,9 +38,10 @@ const VIEWS = {
   block: { extra: [], skip: [], dir: [-0.5, 0.22, 0.84], lift: 440, fit: 0.9 },
   head: { extra: [], skip: [], dir: [-0.46, 0.2, 0.86], lift: 250, fit: 0.95 },
   injector: { extra: [], skip: [], dir: [-0.5, 0.12, 0.86], lift: 160, fit: 0.9 },
-  turbo: { extra: ['catalyst'], skip: ['turboOilFeed'], dir: [-0.22, 0.42, -0.88] },
-  gearbox: { extra: [], skip: ['shiftCables'], dir: [0.5, 0.36, 0.79], fit: 1.02 },
-  clutch: { extra: [], skip: ['clutchPedal', 'clutchMaster', 'fluidReservoir', 'clutchPipe'], dir: [0.46, 0.3, 0.84] },
+  // shell = the parts that hide the mechanism; the mechanism bar (#mech) can take them away. shellName = its button.
+  turbo: { extra: ['catalyst'], skip: ['turboOilFeed'], dir: [-0.22, 0.42, -0.88], shell: ['turbineHousing', 'compressorHousing', 'catalyst', 'catClamp', 'catSeal'], shellName: 'Housings' },
+  gearbox: { extra: [], skip: ['shiftCables'], dir: [0.5, 0.36, 0.79], fit: 1.02, shell: ['gearbox', 'gearboxHousing', 'gearboxCover', 'housingBolts', 'gearboxPlugs'], shellName: 'Housing' },
+  clutch: { extra: [], skip: ['clutchPedal', 'clutchMaster', 'fluidReservoir', 'clutchPipe'], dir: [0.46, 0.3, 0.84], shell: ['clutchCover', 'clutchBolts', 'gearbox'], shellName: 'Cover' },
 };
 const VIEW_NAMES = { crank: 'Crankcase', block: 'Cylinder block', head: 'Cylinder head', injector: 'Unit injectors', turbo: 'Turbocharger GT1749VA', gearbox: 'Gearbox 02Q', clutch: 'Clutch and clutch control' };
 const activeView = () => Object.keys(VIEWS).find((v) => state[v]);
@@ -177,7 +180,8 @@ function refresh() {
     const inV = !!view && inView(g, view);
     // focus = the assembly being taken apart, or the chosen system
     const focus = view ? inV || VIEWS[view].extra.includes(id) : state.system ? PARTS[id].sys === state.system : true;
-    g.visible = (((state.covers || !g.userData.cover) && (state.periph || !g.userData.periph)) || inV) && !(hideRest && !focus);
+    g.visible = (((state.covers || !g.userData.cover) && (state.periph || !g.userData.periph)) || inV) && !(hideRest && !focus)
+      && !(view && !state.shell && VIEWS[view].shell && VIEWS[view].shell.includes(id));
     let st = 'normal';
     if (view) st = focus ? 'normal' : 'ghost';
     else if (state.selected) st = id === state.selected ? 'normal' : 'ghost';
@@ -196,6 +200,7 @@ function refresh() {
   for (const { cap, g } of caps) cap.visible = state.cut && g.userData.state !== 'ghost';
   renderer.localClippingEnabled = state.cut;
   labelsDirty = true;
+  renderMech();
   updateContext();
 }
 
@@ -300,13 +305,14 @@ function updateContext() {
   if (!el) return;
   const view = activeView();
   let what = '', n = 0;
-  if (view) { what = `<b>${VIEW_NAMES[view]}</b> taken apart`; n = Object.values(parts).filter((g) => inView(g, view)).length; }
+  const apart = state.spread < 0.02 ? 'assembled' : 'taken apart';
+  if (view) { what = `<b>${VIEW_NAMES[view]}</b> ${apart}`; n = Object.values(parts).filter((g) => inView(g, view)).length; }
   else if (state.system) { what = `<b>${SYSTEMS[state.system].name}</b>`; n = Object.keys(parts).filter((id) => PARTS[id].sys === state.system).length; }
   else if (state.selected) what = `<b>${PARTS[state.selected].name}</b> selected`;
   if (ui.phone) {
     // compact pill under the top bar; a selected part alone is already named by its sheet, so the pill only covers assemblies and systems
     const name = view ? VIEW_NAMES[view] : state.system ? SYSTEMS[state.system].name : '';
-    const sub = view ? `${n} parts · taken apart` : `${n} parts · rest ${state.isolate ? 'hidden' : 'ghosted'}`;
+    const sub = view ? `${n} parts · ${apart}` : `${n} parts · rest ${state.isolate ? 'hidden' : 'ghosted'}`;
     el.classList.toggle('idle', !name);
     el.innerHTML = name ? `<span class="dot"></span><span class="m-what"><b>${name}</b><small>${sub}</small></span><button class="primary" data-ctx="reset">Show whole engine</button>` : '';
     if (name) root.dataset.ctx = '1'; else delete root.dataset.ctx;
@@ -735,7 +741,7 @@ function renderPanel() {
       <div class="hint" style="margin-top:16px">
         <kbd>Drag</kbd><span>orbit</span><kbd>Scroll</kbd><span>zoom</span><kbd>Right-drag</kbd><span>pan</span>
         <kbd>Space</kbd><span>run / stop</span><kbd>X</kbd><span>X-ray</span><kbd>C</kbd><span>cutaway</span>
-        <kbd>E</kbd><span>explode</span><kbd>V</kbd><span>covers</span><kbd>P</kbd><span>car parts</span><kbd>1</kbd><span>crankcase</span><kbd>2</kbd><span>block</span><kbd>3</kbd><span>head</span><kbd>4</kbd><span>injector</span><kbd>I</kbd><span>isolate</span><kbd>T</kbd><span>turbo</span><kbd>G</kbd><span>gearbox</span><kbd>K</kbd><span>clutch exploded</span><kbd>Esc</kbd><span>clear selection</span>
+        <kbd>E</kbd><span>explode</span><kbd>V</kbd><span>covers</span><kbd>P</kbd><span>car parts</span><kbd>1</kbd><span>crankcase</span><kbd>2</kbd><span>block</span><kbd>3</kbd><span>head</span><kbd>4</kbd><span>injector</span><kbd>I</kbd><span>isolate</span><kbd>T</kbd><span>turbo</span><kbd>G</kbd><span>gearbox</span><kbd>K</kbd><span>clutch</span><kbd>H</kbd><span>housing of the open assembly</span><kbd>Esc</kbd><span>clear selection</span>
       </div>`;
   } else if (state.tab === 'data') {
     body = `<table>${ENGINE.data.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>
@@ -805,6 +811,97 @@ panel.addEventListener('input', (e) => {
   $('#plist').innerHTML = partsListHTML();
 });
 
+// ───────────────────────── mechanisms: guide vanes, clutch pedal, gear lever ─────────────────────────
+// A strip above the toolbar, only while the turbocharger, clutch or gearbox view is open. It sets engine.ctl;
+// engine.tick() moves the parts. Its two buttons on the right take the housings away and put the assembly together.
+const mechEl = $('#mech');
+const MECH = {
+  turbo: () => `<span class="cap">Guide vanes</span>
+    <label class="slider"><span>flat</span><input data-mech="vnt" type="range" min="0" max="100" value="${Math.round(engine.ctl.vnt * 100)}" aria-label="Guide vane position" /><span>steep</span></label>
+    <button data-mech="sweep" title="Move the vanes to and fro on their own">Sweep</button>`,
+  clutch: () => `<span class="cap">Clutch pedal</span>
+    <label class="slider"><span>up</span><input data-mech="pedal" type="range" min="0" max="100" value="${Math.round(engine.ctl.pedal * 100)}" aria-label="Clutch pedal position" /><span>down</span></label>
+    <button data-mech="press" title="Push the pedal to the floor, or let it up">Press</button>`,
+  gearbox: () => `<span class="cap">Gear</span>
+    <div class="gears">${['R', 'N', '1', '2', '3', '4', '5', '6'].map((g) => `<button data-gear="${g}" title="${g === 'N' ? 'Neutral' : GEARS[g].name}">${g}</button>`).join('')}</div>
+    <button data-mech="press" title="Hold the clutch pedal down">Clutch</button>`,
+};
+let mechView = null, mechText = '', sweepT = 0;
+function renderMech() {
+  const view = activeView();
+  if (view !== mechView) {
+    mechView = view;
+    mechText = '';
+    mechEl.hidden = !MECH[view];
+    mechEl.innerHTML = MECH[view] ? `${MECH[view]()}<i class="sep"></i>
+      <button data-mech="shell" title="Show or take away what hides the mechanism (H)">${VIEWS[view].shellName}</button>
+      <button data-mech="assembled" title="Put the assembly together to watch it work, or pull it apart again">Assembled</button>
+      <p class="read"></p>` : '';
+    if (ui.phone) syncFree();
+  }
+  syncMech();
+}
+function mechRead() {
+  const D = engine.drive, run = state.running ? '' : ' Press <b>Run</b> to see it turn.';
+  if (mechView === 'turbo') {
+    const o = Math.round(D.vnt * 100);
+    const what = D.vnt < 0.34 ? 'Flat vanes leave narrow gaps: the exhaust gas speeds up and meets the turbine blades at a flat angle, so boost builds at low engine speed.'
+      : D.vnt < 0.67 ? 'Part load: valve N75 meters the vacuum, and the control unit trims the vanes until sender G31 reports the boost it asked for.'
+        : 'Steep vanes open the gaps wide: the full gas flow passes at high engine speed without over-speeding the turbo. Also the rest position with no vacuum.';
+    return `<b>Vanes ${o} % open</b> · vacuum at the actuator ${100 - o} % · ${what}`;
+  }
+  if (mechView === 'clutch') {
+    const cut = state.cut || ui.phone ? '' : ' <b>Cutaway</b> shows it in section.';
+    if (D.clutch < 0.04) return `<b>Pedal up: clutch engaged.</b> The diaphragm spring clamps the disc between pressure plate and flywheel, so the gearbox input shaft turns with the engine.${cut}`;
+    if (D.grip > 0.02) return '<b>Biting point.</b> The pressure plate is only just lifting: the disc slips and passes on part of the torque.';
+    return `<b>Pedal down: clutch released.</b> Fluid from the master cylinder pushes the slave cylinder piston and the release bearing ≈ 8 mm against the spring fingers; the rim of the spring lets go, the pressure plate lifts ≈ 1.7 mm and the disc is free.${cut}`;
+  }
+  const g = GEARS[D.gear], w = GEARS[engine.ctl.gear];
+  const hid = state.shell && state.spread < 0.5 ? 'The housing hides the gears: switch <b>Housing</b> off. ' : '';
+  if (D.busy) return `${hid}<b>Changing to ${w ? w.name : 'neutral'}.</b> Clutch down, the collar leaves the old gear${w ? `, the synchroniser rings bring the new gear wheel to shaft speed, the collar slides onto its dog teeth` : ''}, clutch up.`;
+  if (!g) return `${hid}<b>Neutral.</b> Every gear pair turns with the input shaft, but no collar is engaged: the gear wheels spin loose on the output shafts and the differential ${Math.abs(D.v) > 0.004 ? 'coasts' : 'stands still'}.${run}`;
+  const path = D.gear === 'R' ? 'input shaft 13 teeth → reverse idler 36 / 14 → 23 on output shaft 2' : `input shaft ${g.zi} teeth → ${g.zo} on output shaft ${g.shaft}`;
+  return `${hid}<b>${g.name}${D.gear === 'R' ? '' : ' gear'}</b> · ${path} · ${g.ratio.toFixed(3)} : 1 · final drive ${FINAL_DRIVE} : ${g.pin} · overall ${((g.ratio * FINAL_DRIVE) / g.pin).toFixed(2)} : 1${engine.ctl.pedal > 0.5 ? ' · clutch held down, coasting' : ''}.${run}`;
+}
+function syncMech() {
+  if (!MECH[mechView]) return;
+  const D = engine.drive, c = engine.ctl;
+  const on = { shell: state.shell, assembled: state.spread < 0.02, sweep: state.sweep, press: c.pedal > 0.5 };
+  for (const b of mechEl.querySelectorAll('button')) {
+    const k = b.dataset.mech, g = b.dataset.gear;
+    const v = g ? g === D.gear && !D.busy : on[k];
+    if (b.classList.contains('on') !== v) { b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); }
+    if (g) b.classList.toggle('want', D.busy && g === c.gear);
+  }
+  const text = mechRead();
+  if (text !== mechText) { mechText = text; $('.read', mechEl).innerHTML = text; }
+}
+function setShell(v) {
+  state.shell = v ?? !state.shell;
+  refresh();
+  updateDimBox();
+}
+mechEl.addEventListener('input', (e) => {
+  const k = e.target.dataset.mech;
+  if (k === 'vnt') { state.sweep = false; engine.ctl.vnt = e.target.value / 100; }
+  else if (k === 'pedal') engine.ctl.pedal = e.target.value / 100;
+});
+mechEl.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const k = b.dataset.mech, c = engine.ctl;
+  if (b.dataset.gear) c.gear = b.dataset.gear;
+  else if (k === 'shell') setShell();
+  else if (k === 'assembled') { state.spread = state.spread < 0.02 ? 1 : 0; syncSlider(); updateContext(); viewGroup(activeView()); }
+  else if (k === 'sweep') { state.sweep = !state.sweep; sweepT = (Math.acos(2 * c.vnt - 1) * 5) / TAU; }
+  else if (k === 'press') {
+    c.pedal = c.pedal > 0.5 ? 0 : 1;
+    const s = $('[data-mech="pedal"]', mechEl);
+    if (s) s.value = c.pedal * 100;
+  }
+  syncMech();
+});
+
 // ───────────────────────── toolbar ─────────────────────────
 const toolbar = $('#toolbar');
 const explodeInput = $('#explode'), rpmInput = $('#rpm'), rpmVal = $('#rpmVal'), hud = $('#hud');
@@ -812,7 +909,7 @@ function setToggle(name, value) {
   state[name] = value ?? !state[name];
   if (name in VIEWS && state[name]) {
     for (const v in VIEWS) if (v !== name && state[v]) { state[v] = false; $(`[data-tg="${v}"]`, toolbar).classList.remove('on'); }
-    state.spread = 1; state.system = null; state.selected = null;
+    state.spread = 1; state.shell = true; state.system = null; state.selected = null;   // a newly opened assembly starts complete and apart
     renderSystems(); renderPanel();
   }
   if (name in VIEWS) syncSlider();
@@ -848,7 +945,7 @@ toolbar.addEventListener('click', (e) => {
   else if (a === 'home') goHome();
   else if (a === 'run') setRunning();
 });
-explodeInput.addEventListener('input', () => { if (activeView()) state.spread = explodeInput.value / 100; else state.explodeTarget = explodeInput.value / 100; syncNav(); });
+explodeInput.addEventListener('input', () => { if (activeView()) { state.spread = explodeInput.value / 100; updateContext(); } else state.explodeTarget = explodeInput.value / 100; syncNav(); });
 $('#context').addEventListener('click', (e) => { if (e.target.closest('[data-ctx="reset"]')) showAll(); });
 rpmInput.addEventListener('input', () => { state.rpm = +rpmInput.value; rpmVal.textContent = `${state.rpm} rpm`; });
 
@@ -871,6 +968,7 @@ addEventListener('keydown', (e) => {
   else if (k === 'k') setToggle('clutch');
   else if (k === 'l') setToggle('labels');
   else if (k === 'd') setToggle('dims');
+  else if (k === 'h') { if (MECH[activeView()]) setShell(); }
   else if (k === 'e') { state.explodeTarget = state.explodeTarget > 0.5 ? 0 : 1; }
   else if (k === 'home') goHome();
 });
@@ -894,9 +992,19 @@ function frame(now) {
   last = now;
   if (state.running) {
     theta += dt * (state.rpm / 60) * TAU;
+  }
+  if (state.sweep && mechView === 'turbo') {
+    sweepT += dt;
+    engine.ctl.vnt = 0.5 + 0.5 * Math.cos((sweepT * TAU) / 5);
+    const s = $('[data-mech="vnt"]', mechEl);
+    if (s) s.value = Math.round(engine.ctl.vnt * 100);
+  }
+  engine.tick(dt);                 // guide vanes, clutch and gear change move towards what is asked for
+  if (state.running) {
     engine.update(theta, true);
     updateHud();
   }
+  syncMech();
   let viewMoved = false;
   for (const v in VIEWS) {
     const target = state[v] ? state.spread : 0;

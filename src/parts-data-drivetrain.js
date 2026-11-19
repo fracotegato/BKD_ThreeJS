@@ -125,7 +125,7 @@ export const DRIVETRAIN = {
   pressurePlate: c('Pressure plate', 'Cast-iron ring that the diaphragm spring presses against the clutch plate. Three leaf straps tie it to the cover so that it turns with it but can move back to release.',
     [['Material', 'Cast iron'], ['Drive', '3 tangential leaf straps']], [['clutchDisc', 'clamps'], ['diaphragmSpring', 'pressed by'], ['clutchCover', 'strapped to']]),
   diaphragmSpring: c('Diaphragm spring', 'Slotted conical spring disc. Its rim presses the pressure plate; pushing its finger tips towards the flywheel makes it pivot on the fulcrum rings and lift the rim, which frees the clutch plate.',
-    [['Fingers', '≈ 18'], ['Pivots on', 'Fulcrum rings riveted to the cover']], [['pressurePlate', 'presses'], ['releaseBearing', 'fingers pushed by'], ['clutchCover', 'pivots in']]),
+    [['Fingers', '≈ 18'], ['Pivots on', 'Fulcrum rings riveted to the cover'], ['Release travel at the finger tips', '≈ 8 mm'], ['Lift of the pressure plate', '≈ 1.7 mm']], [['pressurePlate', 'presses'], ['releaseBearing', 'fingers pushed by'], ['clutchCover', 'pivots in']]),
   clutchCover: c('Clutch cover', 'Pressed-steel cover that carries the diaphragm spring and bolts to the secondary mass. It includes a self-adjusting ring that takes up lining wear so pedal effort stays the same.',
     [['Material', 'Pressed steel'], ['Wear compensation', 'Self-adjusting ring']], [['dmfSecondary', 'bolted to'], ['clutchBolts', 'held by'], ['diaphragmSpring', 'carries'], ['pressurePlate', 'drives']]),
   clutchBolts: c('Pressure plate bolts', 'Six 12-point bolts holding the clutch cover to the flywheel. Tightened in stages in a diagonal sequence so the cover is not distorted.',

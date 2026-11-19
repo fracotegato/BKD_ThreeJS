@@ -61,6 +61,21 @@ Pushing to `main` runs the checks and deploys to GitHub Pages (`.github/workflow
   there and in `VIEW_NAMES`, a `state` flag and `viewT` key, a toolbar button with `data-tg`, and a key binding.
 - `Isolate` hides everything outside the active view or system; `periph` parts are hidden by the Car parts toggle.
 
+## Mechanisms the user works (guide vanes, clutch pedal, gears)
+
+- `engine.ctl = { vnt, pedal, gear }` is what is asked for (`vnt` 1 = vanes steep/open … 0 = flat; `pedal` 0 … 1;
+  `gear` `'N' | '1'…'6' | 'R'`). `engine.tick(dt)` runs every frame, eases the real state `engine.drive` towards it
+  and calls the pose functions the builders register: `anim.vnt(open)` (turbo), `anim.clutch(p)` and `anim.shift(col)` (gearbox file).
+- A gear change is a sequence inside `tick`: clutch down, old collar to neutral, new collar in, clutch up. Reverse waits until the differential has stopped.
+- Spinners take a source: `anim.spinners.push({ o, ratio, src })`. No `src` = crankshaft; `'in'` = gearbox input shaft
+  (clutch plate, input shaft, all loose gear wheels), `'o1'` / `'o2'` = output shafts, `'df'` = differential. `update()` sums the
+  angles from `drive.rIn` and `drive.v`, both ratios to engine speed. `GEARS` in `engine-gearbox.js` holds teeth, synchroniser and collar direction per gear.
+- Anything that must move inside a part or a loose piece goes in its own inner `Group` (the part and piece groups are
+  repositioned by `setExplode`). The diaphragm spring is one unmerged mesh whose vertices `anim.clutch` moves.
+- The control strip is `#mech` in `index.html`, filled by `MECH` / `renderMech` / `syncMech` in `main.js`, shown only in the
+  turbo, clutch and gearbox views. `VIEWS[view].shell` lists the parts its housing button hides (`state.shell`, key H).
+- Travel figures, vane angles and the position of the vane crank are estimates (≈); the tooth counts are from the catalogue.
+
 ## Sources of truth, in order
 
 1. **VW self-study programme 316** for how the engine works. The PDF is not in the repository; ask the owner for it.

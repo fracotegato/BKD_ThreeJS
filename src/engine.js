@@ -4,11 +4,13 @@ import { Assembly, mergeStatic } from './helpers.js';
 import { E, buildCore } from './engine-core.js';
 import { buildAncillaries } from './engine-ancillaries.js';
 import { buildPeriphery } from './engine-periphery.js';
-import { buildGearbox } from './engine-gearbox.js';
+import { buildGearbox, GEARS } from './engine-gearbox.js';
 import { buildDetail } from './engine-detail.js';
 
 const DEG = Math.PI / 180;
 const smooth = (t) => t * t * (3 - 2 * t);
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const toward = (x, t, step) => (Math.abs(t - x) <= step ? t : x + Math.sign(t - x) * step);
 const bump = (a, open, close) => (a > open && a < close ? Math.sin((Math.PI * (a - open)) / (close - open)) ** 2 : 0);
 
 /** Valve lift (0…1) for a cylinder cycle angle a in degrees, 0 = firing TDC, 720° per cycle. */
@@ -38,9 +40,54 @@ export function buildEngine() {
   buildDetail(A, anim);
   for (const g of Object.values(A.parts)) mergeStatic(g);
 
+  // ───────── mechanisms the user works: guide vanes, clutch pedal, gear lever ─────────
+  // ctl = what is asked for; tick() eases the real positions (D) towards it and works out who turns how fast.
+  const ctl = { vnt: 1, pedal: 0, gear: 'N' };      // vnt: 1 = vanes steep (open) … 0 = flat; pedal: 0 … 1 = on the floor
+  // Speeds are ratios to engine speed: rIn = gearbox input shaft, v = differential. Angles are summed up in update().
+  const D = { vnt: 1, clutch: 0, col: [0, 0, 0, 0], gear: 'N', busy: false, grip: 1, rIn: 1, v: 0, aIn: 0, aDf: 0, theta: 0 };
+  function tick(dt) {
+    if (D.vnt !== ctl.vnt) { D.vnt = toward(D.vnt, clamp01(ctl.vnt), dt * 2.2); anim.vnt(D.vnt); }
+    // A gear change is a sequence: clutch down, old collar to neutral, new collar onto its gear, clutch up.
+    const want = GEARS[ctl.gear] || null, target = [0, 0, 0, 0];
+    if (want) target[want.syn] = want.dir;
+    D.busy = D.col.some((c, i) => c !== target[i]);
+    let braking = false, sync = null;
+    if (D.busy && D.clutch > 0.9) {
+      braking = !!want && D.v * want.k < 0 && Math.abs(D.v) > 0.003;       // reverse ↔ forward only once the car stands
+      for (let i = 0; i < 4; i++) {
+        const t = target[i];
+        if (t !== 0 && (braking || D.col.some((c, j) => j !== i && Math.abs(c) > 0.02))) continue;   // one collar at a time
+        D.col[i] = toward(D.col[i], t, dt * 3.4);
+        if (t !== 0 && D.col[i] * t > 0.3) sync = want;                    // friction rings at work
+      }
+      anim.shift(D.col);
+    }
+    const pedal = D.busy ? 1 : clamp01(ctl.pedal);
+    if (D.clutch !== pedal) { D.clutch = toward(D.clutch, pedal, dt * 3); anim.clutch(D.clutch); }
+    let eng = null;
+    D.gear = 'N';
+    for (const [name, g] of Object.entries(GEARS)) if (g && D.col[g.syn] === g.dir) { eng = g; D.gear = name; }
+    const grip = (D.grip = 1 - smooth(clamp01((D.clutch - 0.3) / 0.45)));  // how hard the disc is clamped
+    const k = (rate) => 1 - Math.exp(-dt * rate);
+    if (eng) {                                      // gear locked: input shaft and wheels are one train, the clutch pulls it to engine speed
+      D.v += (eng.k - D.v) * k(3 * grip);
+      if (grip < 0.02) D.v *= Math.exp(-dt * 0.1);  // coasting
+      D.rIn = D.v / eng.k;
+    } else {
+      if (sync) D.rIn += (D.v / sync.k - D.rIn) * k(22);                   // synchroniser brings the input shaft to the speed of the new gear
+      else if (grip > 0.02) D.rIn += (1 - D.rIn) * k(6 * grip);
+      else D.rIn *= Math.exp(-dt * 0.9);                                    // free shaft slows down in the oil
+      D.v *= Math.exp(-dt * (braking ? 5 : 0.12));
+    }
+  }
+
   function update(theta, running = false) {
-    const deg = theta / DEG;
-    for (const s of anim.spinners) s.o.rotation.x = theta * s.ratio;
+    const deg = theta / DEG, d = theta - D.theta;
+    D.theta = theta;
+    D.aIn += D.rIn * d;
+    D.aDf += D.v * d;
+    const ang = { in: D.aIn, o1: (-D.aDf * 69) / 20, o2: (-D.aDf * 69) / 25, df: D.aDf };   // both output shafts mesh with the ring gear
+    for (const s of anim.spinners) s.o.rotation.x = (s.src ? ang[s.src] : theta) * s.ratio;
     for (let i = 0; i < 4; i++) {
       const a = theta + (E.throwSign[i] < 0 ? Math.PI : 0);
       const sy = E.r * Math.sin(a);
@@ -86,5 +133,5 @@ export function buildEngine() {
     for (const p of anim.pieces) p.o.position.copy(p.home).addScaledVector(p.sub, k(p.group || 'turbo', p.scale ?? 1));
   }
 
-  return { root: A.root, parts: A.parts, update, setExplode, E };
+  return { root: A.root, parts: A.parts, update, setExplode, tick, ctl, drive: D, E };
 }

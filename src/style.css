@@ -215,6 +215,29 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 #context button:hover { background: rgba(255, 255, 255, 0.08); }
 #context button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 #toolbar { row-gap: 20px; padding-top: 14px; }
+
+/* ───────── mechanism bar: guide vanes, clutch pedal, gears (only in the turbo, clutch and gearbox views) ───────── */
+#mech {
+  pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px;
+  max-width: min(100%, 760px); padding: 7px 12px 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  backdrop-filter: blur(12px); font-size: 12.5px; color: var(--muted);
+}
+#mech[hidden] { display: none; }
+#mech .cap { font: 10px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: #8a94a1; }
+#mech button {
+  background: none; border: 1px solid var(--line-strong); border-radius: 8px; height: 30px; min-width: 32px; padding: 0 11px;
+  color: #cfd6de; font-size: 12.5px; cursor: pointer;
+}
+#mech button:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+#mech button.on { background: rgba(255, 178, 36, 0.16); border-color: rgba(255, 178, 36, 0.55); color: var(--accent); }
+#mech .gears { display: flex; gap: 3px; }
+#mech .gears button { width: 32px; padding: 0; font: 600 13px var(--display); }
+#mech .gears button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+#mech .gears button.want { border-color: var(--accent); color: var(--accent); }
+#mech .slider { display: flex; align-items: center; gap: 8px; }
+#mech .sep { width: 1px; height: 22px; background: var(--line-strong); }
+#mech .read { flex-basis: 100%; margin: 0; min-height: 2.9em; text-align: center; font-size: 12px; line-height: 1.45; }
+#mech .read b { color: var(--text); font-weight: 600; }
 #toolbar .grp { position: relative; }
 #toolbar .grp[data-cap]::before {
   content: attr(data-cap); position: absolute; left: 10px; top: -15px; font: 10px var(--mono); letter-spacing: 0.08em;
@@ -391,6 +414,20 @@ html.phone #hud .cyl b { font-size: 13px; white-space: nowrap; }
   html.phone #hud .angle b { min-width: 0; }
 }
 
+html.phone #mech { margin: 0 8px 8px; padding: 8px 10px; gap: 8px; justify-content: flex-start; background: var(--sheet-bg); font-size: 13px; }
+html.phone[data-panel='full'] #mech, html.phone[data-sheet='apart'] #mech, html.phone[data-sheet='view'] #mech { display: none; }   /* portrait: no room above a tall sheet */
+html.phone #mech .cap { display: none; }                             /* the status pill names the assembly; keep the buttons on one row */
+html.phone #mech button { flex: 1 1 auto; height: 40px; min-width: 40px; padding: 0 8px; font-size: 14px; }
+html.phone #mech button:hover { background: none; color: #cfd6de; }
+html.phone #mech button.on:hover { background: rgba(255, 178, 36, 0.16); color: var(--accent); }
+html.phone #mech .gears { flex: 1 1 100%; order: 1; gap: 4px; }
+html.phone #mech .gears button { flex: 1; width: auto; min-width: 0; font-size: 15px; }
+html.phone #mech .gears button.on:hover { background: var(--accent); color: var(--accent-ink); }
+html.phone #mech .slider { flex: 1 1 100%; order: 1; }
+html.phone #mech .slider input { flex: 1; min-width: 0; }
+html.phone #mech .sep { display: none; }
+html.phone #mech .read { order: 2; min-height: 0; text-align: left; font-size: 13px; line-height: 1.4; max-height: 5.6em; overflow-y: auto; }
+
 html.phone #toolbar { display: none; }
 html.phone[data-sheet='apart'] #toolbar, html.phone[data-sheet='view'] #toolbar, html.phone[data-sheet='run'] #toolbar {
   display: flex; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; align-items: stretch; gap: 16px;
@@ -486,6 +523,10 @@ html.phone.land[data-panel='full']:not([data-sel]) #systems {
 }
 html.phone.land #bottom { left: var(--rail-w); right: var(--side); bottom: var(--safe-b); align-items: center; }
 html.phone.land #hud { width: calc(100% - 16px); max-width: 620px; }
+html.phone.land #mech { width: calc(100% - 16px); max-width: 620px; }
+html.phone.land[data-panel] #mech, html.phone.land[data-sheet] #mech { display: flex; }   /* landscape: beside the sheet, keep it */
+html.phone.land[data-panel] #mech[hidden], html.phone.land[data-sheet] #mech[hidden] { display: none; }
+html.phone.land #mech .read { max-height: 2.8em; }
 html.phone.land[data-panel] #hud { display: flex; }                 /* landscape: the HUD sits beside the sheet, keep it */
 html.phone.land[data-panel] #hud[hidden] { display: none; }
 html.phone.land[data-sheet='apart'] #toolbar, html.phone.land[data-sheet='view'] #toolbar, html.phone.land[data-sheet='run'] #toolbar {

@@ -28,6 +28,8 @@
 
   <div id="bottom">
   <div id="context" aria-live="polite"></div>
+  <!-- controls of the assembly on screen: guide vanes, clutch pedal, gears (filled in by main.js) -->
+  <div id="mech" role="group" aria-label="Work the mechanism" hidden></div>
   <div id="hud" hidden>
     <div class="angle"><b id="hudAngle">0°</b><span>crank angle</span></div>
     <div class="cyls" id="hudCyls"></div>
@@ -49,9 +51,9 @@
       <button class="tg" data-tg="block" title="Cylinder block: pull out pistons, rings, pins, connecting rods, shells, caps and bolts (2)">Block</button>
       <button class="tg" data-tg="head" title="Cylinder head: lift off cover, camshafts, rockers, injectors and pull the valves with springs, collets, seals and guides (3)">Head</button>
       <button class="tg" data-tg="injector" title="Unit injectors: pump piston, spring, solenoid valve, nozzle spring, needle, nozzle, nut and seals (4)">Injector</button>
-      <button class="tg" data-tg="turbo" title="Isolate the turbocharger and pull its components apart along the shaft (T)">Turbo</button>
-      <button class="tg" data-tg="gearbox" title="Isolate the 02Q gearbox and pull every shaft, gear, synchroniser and bearing apart (G)">Gearbox</button>
-      <button class="tg" data-tg="clutch" title="Isolate the dual-mass flywheel, clutch and hydraulic clutch control and pull them apart (K)">Clutch</button>
+      <button class="tg" data-tg="turbo" title="Isolate the turbocharger and pull its components apart along the shaft; then move its guide vanes (T)">Turbo</button>
+      <button class="tg" data-tg="gearbox" title="Isolate the 02Q gearbox and pull every shaft, gear, synchroniser and bearing apart; then change gear (G)">Gearbox</button>
+      <button class="tg" data-tg="clutch" title="Isolate the dual-mass flywheel, clutch and hydraulic clutch control and pull them apart; then press the pedal (K)">Clutch</button>
     </div>
     <div class="grp toggles" data-cap="Show">
       <button class="tg on" data-tg="isolate" title="When an assembly or a system is chosen, hide everything else instead of ghosting it (I)">Isolate</button>

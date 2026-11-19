@@ -122,16 +122,28 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
 
   // ═════════════════════════ variable nozzle ═════════════════════════
   const NV = 11, RP = 31;                          // vane count, pitch radius of the vane pivots
+  // Vane angle measured from the tangent: steep = open (large flow), flat = nearly closed (narrow gaps). Both ≈.
+  const VA = { steep: 1.02, flat: 0.42, arm: 7.8 };
+  const vaneAngle = (open) => VA.flat + (VA.steep - VA.flat) * open;
+  /** Where a vane arm tip sits, as an angle seen from the shaft axis relative to its pivot: the unison ring follows it. */
+  const ringTurn = (phi) => Math.atan2(-VA.arm * Math.cos(phi), RP + VA.arm * Math.sin(phi));
+  const vnt = { pivots: [] };
+  // Vane crank: its shaft is parallel to the turbo shaft, under the bearing housing. Position ≈.
+  const CKA = Math.PI + ringTurn(vaneAngle(0.5));  // its angle round the shaft axis: puts the drive block of the ring between two notches
+  const CK = { y: 51 * Math.cos(CKA), z: 51 * Math.sin(CKA), pin: 41.5, lever: 22 };
+  const EYE = [22, CK.y + CK.lever * Math.cos(CKA), CK.z + CK.lever * Math.sin(CKA)];   // rod eye with the vanes half open
+  const CAN = [-12, -72, -34];                                                          // where the rod enters the actuator
   T('vntVanes', [-36, 0, 0], { anchor: top(44, 40) }, (t) => {
     ring(NV, RP, (y, z, a) => {
       const piv = new THREE.Group();
       piv.position.set(0, y, z);
-      piv.rotation.x = a + 1.02;                                                            // vane angle, about half open
+      piv.userData.a = a;                                                                   // rotation.x = a + vane angle, set by anim.vnt
       piv.add(put(box(7, 2.4, 15, M.steelDark, 1), 44, 0, 1.5));                            // vane (7 mm tall)
       piv.add(put(cyl('x', 1.9, 14, M.steel, 10), 41, 0, 0));                               // pivot pin through the ring
       piv.add(put(box(2.4, 4.4, 10, M.steel, 1), 35.4, 0, -3.4));                           // vane arm on the back
-      piv.add(put(cyl('x', 2.3, 2.6, M.steel, 10), 35.4, 0, -7.8));                         // arm tip, sits in a slot of the unison ring
+      piv.add(put(cyl('x', 2, 2.6, M.steel, 10), 35.4, 0, -VA.arm));                        // arm tip, sits in a notch of the unison ring
       t.add(piv);
+      vnt.pivots.push(piv);
     });
   });
   T('nozzleRing', [-84, 0, 0], { anchor: top(39, 46) }, (t) => {
@@ -144,13 +156,26 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
     ring(3, 41, (y, z) => piece(t, [-14, 0, 0], (p) => p.add(put(cyl('x', 3.6, 3, M.steelDark, 14), 35.5, y, z))), 1.35);  // guide rollers
   });
   T('vntUnison', [-128, 0, 0], { anchor: top(34, 46) }, (t) => {
+    const u = (vnt.ring = new THREE.Group());                                               // turns a few degrees about the shaft axis
     const s = new THREE.Shape();
     s.absarc(0, 0, 44, 0, TAU, false);
-    s.holes.push(circ(0, 0, 33.5));
-    ring(NV, 38.8, (y, z) => s.holes.push(circ(z, y, 2.6)), 0.2);                           // one slot per vane arm
-    t.add(put(extrudeX(s, 2.4, M.steel, { curve: 40 }), 33.2, 0, 0));
-    t.add(put(box(2.4, 12, 9, M.steel, 1), 33.2, -45, -14));                                // lug driven by the crank
-    t.add(put(cyl('x', 2.6, 6, M.steelDark, 10), 31, -47, -14));
+    // inner edge with one radial notch per vane arm (the arm tip moves in and out of it as the ring turns)
+    const h = new THREE.Path(), R0 = 33.5, R1 = 40.6, w = 2.7, da = Math.asin(w / R0), db = Math.asin(w / R1);
+    const pt = (r, a) => [r * Math.sin(a), r * Math.cos(a)];
+    for (let k = 0; k < NV; k++) {
+      const a = (k * TAU) / NV, next = ((k + 1) * TAU) / NV - da;
+      [[R0, a - da], [R1, a - db], [R1, a + db], [R0, a + da]].forEach(([r, b], i) => (k + i ? h.lineTo(...pt(r, b)) : h.moveTo(...pt(r, b))));
+      for (let j = 1; j < 5; j++) h.lineTo(...pt(R0, a + da + ((next - a - da) * j) / 5));
+    }
+    h.closePath();
+    s.holes.push(h);
+    u.add(put(extrudeX(s, 2.4, M.steel, { curve: 40 }), 33.2, 0, 0));
+    // drive block on the face of the ring: the pin of the vane crank sits in it
+    const aL = (vnt.blockA = CKA - ringTurn(vaneAngle(0.5)));
+    const blk = put(box(3, 8, 8, M.steel, 1), 30.6, CK.pin * Math.cos(aL), CK.pin * Math.sin(aL));
+    blk.rotation.x = aL;
+    u.add(blk);
+    t.add(u);
   });
   T('turboHeatShield', [-156, 0, 0], { anchor: top(35, 30) }, (t) => {
     t.add(latheX([[33, 7.4], [33, 16], [35.5, 24], [36.5, 31], [37.4, 31], [36.6, 23.5], [34.2, 15.5], [34.2, 7.4], [33, 7.4]], M.stainless, 44));
@@ -203,7 +228,7 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
     t.add(put(box(16, 1.2, 12, M.dark), -8, -33.4, 0));
     for (const dx of [-13, 13]) t.add(put(cyl('y', 2.6, 1.6, M.dark, 10), -8 + dx, -33.2, 0));
     t.add(put(box(20, 12, 1.5, M.alu), -14, 4, 25.5));                                      // type plate
-    t.add(put(cyl('x', 7, 14, M.castIronLight, 16), 25, -34, -38));                         // bush for the vane crank
+    t.add(put(cyl('x', 7, 14, M.castIronLight, 16), 25, CK.y, CK.z));                       // bush for the vane crank
   });
   // Thrust bearing: horseshoe plate that slides into the groove of the thrust collar
   T('thrustBearing', [-444, 0, 0], { anchor: top(-46, 20) }, (t) => {
@@ -298,18 +323,39 @@ export function buildTurbo(A, anim, { TX, TY, TZ, OF }) {
     t.add(bar([-20, -74, -30], [-70, -52, 22], 24, 4, M.steelDark, 2));                     // bracket to the compressor housing
     piece(t, [-10, 26, 14], (p) => p.add(put(hex('y', 4, 4, M.steelDark), -74, -48, 28)));  // bracket bolt
   });
-  T('vntRod', [-20, -118, -96], { anchor: [TX + 6, TY - 50, TZ - 44] }, (t) => {
-    t.add(rod([-12, -72, -34], [22, -40, -44], 2.4, M.steel));
-    t.add(put(hex('x', 3.4, 5, M.steelDark), -4, -64, -36.5));                              // adjusting nut
-    t.add(put(sphere(3.4, M.steelDark), 22, -40, -44));                                     // rod eye
+  T('vntRod', [-20, -118, -96], { anchor: [TX + (EYE[0] + CAN[0]) / 2, TY + (EYE[1] + CAN[1]) / 2 - 8, TZ + (EYE[2] + CAN[2]) / 2] }, (t) => {
+    // drawn along its own y axis from the eye; anim.vnt moves the eye with the crank and aims the rod at the actuator
+    const r = (vnt.rod = new THREE.Group()), L = Math.hypot(EYE[0] - CAN[0], EYE[1] - CAN[1], EYE[2] - CAN[2]) + 6;
+    r.add(put(cyl('y', 2.4, L, M.steel, 12), 0, L / 2, 0));
+    r.add(put(hex('y', 3.4, 5, M.steelDark), 0, L * 0.4, 0));                               // adjusting nut
+    r.add(sphere(3.4, M.steelDark));                                                        // rod eye
+    t.add(r);
   });
-  T('vntCrank', [16, -86, -92], { anchor: [TX + 30, TY - 26, TZ - 40] }, (t) => {
-    t.add(bar([22, -40, -44], [25, -34, -38], 6, 4, M.steelDark, 1));                       // outer lever
-    t.add(put(cyl('x', 3.2, 22, M.steel, 12), 27, -34, -38));                               // shaft through the housing
-    t.add(bar([32, -34, -38], [32, -45, -14], 5, 3, M.steel, 1));                           // inner arm to the unison ring
-    t.add(put(cyl('x', 2.2, 6, M.steel, 10), 32, -47, -14));
-    piece(t, [18, 14, -14], (p) => p.add(put(hex('x', 3, 5, M.steelDark), 34, -30, -30), put(cyl('x', 1.6, 12, M.steelDark, 8), 28, -30, -30)));   // minimum-flow stop screw
+  T('vntCrank', [16, -86, -92], { anchor: [TX + 30, TY + CK.y - 8, TZ + CK.z] }, (t) => {
+    const c = (vnt.crank = new THREE.Group()), ca = Math.cos(CKA), sa = Math.sin(CKA), ri = 51 - CK.pin;
+    c.position.set(0, CK.y, CK.z);                                                          // turns about its own shaft
+    c.add(bar([EYE[0], CK.lever * ca, CK.lever * sa], [25, 0, 0], 6, 4, M.steelDark, 1));   // outer lever, ≈ 22 mm
+    c.add(put(cyl('x', 3.2, 22, M.steel, 12), 27, 0, 0));                                   // shaft through the housing
+    c.add(bar([30.6, 0, 0], [30.6, -ri * ca, -ri * sa], 5, 3, M.steel, 1));                 // inner arm to the unison ring
+    c.add(put(cyl('x', 2.2, 6, M.steel, 10), 31, -ri * ca, -ri * sa));                      // pin in the drive block
+    t.add(c);
+    piece(t, [18, -14, 14], (p) => p.add(put(hex('x', 3, 5, M.steelDark), 34, CK.y - 8, CK.z + 12), put(cyl('x', 1.6, 12, M.steelDark, 8), 28, CK.y - 8, CK.z + 12)));   // minimum-flow stop screw
   });
+  // Pose of the whole vane mechanism. open = 1: steep vanes, no vacuum, rod out; open = 0: flat vanes, full vacuum, rod pulled in.
+  const _y = new THREE.Vector3(0, 1, 0), _d = new THREE.Vector3();
+  anim.vnt = (open) => {
+    const phi = vaneAngle(open), turn = ringTurn(phi);
+    for (const p of vnt.pivots) p.rotation.x = p.userData.a + phi;
+    vnt.ring.rotation.x = turn;
+    const a = vnt.blockA + turn;                                                            // the crank pin follows the drive block
+    const g = Math.atan2(CK.pin * Math.sin(a) - CK.z, CK.pin * Math.cos(a) - CK.y) - (CKA + Math.PI);
+    const turnBy = Math.atan2(Math.sin(g), Math.cos(g));
+    vnt.crank.rotation.x = turnBy;
+    const e = CKA + turnBy;
+    vnt.rod.position.set(EYE[0], CK.y + CK.lever * Math.cos(e), CK.z + CK.lever * Math.sin(e));
+    vnt.rod.quaternion.setFromUnitVectors(_y, _d.set(...CAN).sub(vnt.rod.position).normalize());
+  };
+  anim.vnt(1);
 
   // ═════════════════════════ oil lines ═════════════════════════
   // feed: steel pipe from the oil filter module round the gearbox end (ETKA item 9, 038 145 771 AG)
