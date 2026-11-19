@@ -16,7 +16,8 @@ const state = {
   explode: 0, explodeTarget: 0, crank: false, block: false, head: false, injector: false, turbo: false, gearbox: false, clutch: false,
   viewT: { crank: 0, block: 0, head: 0, injector: 0, turbo: 0, gearbox: 0, clutch: 0 },
   isolate: true, spread: 1, running: false, rpm: 30,
-  shell: true, sweep: false,       // housings of the active assembly shown; guide vanes moving to and fro on their own
+  shell: true, auto: false,        // housings of the active assembly shown; the mechanism on screen working on its own
+  demo: null, demoCut: false,      // which "Watch it work" demonstration is on, and whether it switched the cutaway on
   tab: 'overview', partTab: 'overview', query: '',
 };
 // Phone layout (see style.css, "phone layout"): html.phone is set at 760 px width and below and on short landscape screens.
@@ -323,9 +324,10 @@ function updateContext() {
   el.classList.toggle('idle', !what);
   el.innerHTML = what
     ? `<span class="dot"></span><span>${what}${n ? ` · ${n} parts` : ''}${view || state.system ? (state.isolate ? ' · everything else hidden' : ' · everything else ghosted') : ''}</span><button class="primary" data-ctx="reset">Show whole engine</button>`
-    : '<span class="dot"></span><span>Whole engine. Click a part, pick a system on the left, or take one assembly apart below.</span>';
+    : '<span class="dot"></span><span>Whole engine. Click a part, pick a system on the left, take one assembly apart, or watch the turbo, clutch or gearbox work below.</span>';
 }
 function showAll() {
+  endDemo();
   for (const v in VIEWS) if (state[v]) { state[v] = false; $(`[data-tg="${v}"]`, toolbar).classList.remove('on'); }
   state.system = null; state.selected = null; state.explodeTarget = 0;
   syncSlider();
@@ -589,6 +591,7 @@ function select(id, { focus = true } = {}) {
   if (id && focus) focusPart(id);
 }
 function setSystem(sys) {
+  endDemo();
   state.system = state.system === sys ? null : sys;
   state.selected = null;
   if (state.system) state.tab = 'parts';
@@ -818,15 +821,31 @@ const mechEl = $('#mech');
 const MECH = {
   turbo: () => `<span class="cap">Guide vanes</span>
     <label class="slider"><span>flat</span><input data-mech="vnt" type="range" min="0" max="100" value="${Math.round(engine.ctl.vnt * 100)}" aria-label="Guide vane position" /><span>steep</span></label>
-    <button data-mech="sweep" title="Move the vanes to and fro on their own">Sweep</button>`,
+    <button data-mech="auto" title="Move the vanes to and fro on their own">Auto</button>`,
   clutch: () => `<span class="cap">Clutch pedal</span>
     <label class="slider"><span>up</span><input data-mech="pedal" type="range" min="0" max="100" value="${Math.round(engine.ctl.pedal * 100)}" aria-label="Clutch pedal position" /><span>down</span></label>
-    <button data-mech="press" title="Push the pedal to the floor, or let it up">Press</button>`,
+    <button data-mech="press" title="Push the pedal to the floor, or let it up">Press</button>
+    <button data-mech="auto" title="Press and release the pedal on its own">Auto</button>`,
   gearbox: () => `<span class="cap">Gear</span>
     <div class="gears">${['R', 'N', '1', '2', '3', '4', '5', '6'].map((g) => `<button data-gear="${g}" title="${g === 'N' ? 'Neutral' : GEARS[g].name}">${g}</button>`).join('')}</div>
-    <button data-mech="press" title="Hold the clutch pedal down">Clutch</button>`,
+    <button data-mech="press" title="Hold the clutch pedal down">Clutch</button>
+    <button data-mech="auto" title="Go through the gears on its own">Auto</button>`,
 };
-let mechView = null, mechText = '', sweepT = 0;
+let mechView = null, mechText = '', autoT = 0;
+// Auto: the mechanism on screen works by itself until the user touches one of its controls.
+const AUTO_GEARS = ['N', '1', '2', '3', '4', '5', '6', 'N', 'R'];
+function startAuto() {
+  // start where the mechanism is now (vanes), or shortly before the first movement (pedal, gear lever)
+  autoT = mechView === 'turbo' ? (Math.acos(2 * engine.ctl.vnt - 1) * 5) / TAU : mechView === 'clutch' ? 3.6 : 2.4;
+}
+function runAuto(dt) {
+  if (!state.auto || !MECH[mechView]) return;
+  autoT += dt;
+  const c = engine.ctl, set = (k, v) => { const s = $(`[data-mech="${k}"]`, mechEl); if (s) s.value = v; };
+  if (mechView === 'turbo') { c.vnt = 0.5 + 0.5 * Math.cos((autoT * TAU) / 5); set('vnt', Math.round(c.vnt * 100)); }
+  else if (mechView === 'clutch') { c.pedal = autoT % 5 < 2.2 ? 1 : 0; set('pedal', c.pedal * 100); }
+  else c.gear = AUTO_GEARS[Math.floor(autoT / 3.6) % AUTO_GEARS.length];
+}
 function renderMech() {
   const view = activeView();
   if (view !== mechView) {
@@ -866,7 +885,7 @@ function mechRead() {
 function syncMech() {
   if (!MECH[mechView]) return;
   const D = engine.drive, c = engine.ctl;
-  const on = { shell: state.shell, assembled: state.spread < 0.02, sweep: state.sweep, press: c.pedal > 0.5 };
+  const on = { shell: state.shell, assembled: state.spread < 0.02, auto: state.auto, press: c.pedal > 0.5 };
   for (const b of mechEl.querySelectorAll('button')) {
     const k = b.dataset.mech, g = b.dataset.gear;
     const v = g ? g === D.gear && !D.busy : on[k];
@@ -883,18 +902,21 @@ function setShell(v) {
 }
 mechEl.addEventListener('input', (e) => {
   const k = e.target.dataset.mech;
-  if (k === 'vnt') { state.sweep = false; engine.ctl.vnt = e.target.value / 100; }
+  if (k === 'vnt') engine.ctl.vnt = e.target.value / 100;
   else if (k === 'pedal') engine.ctl.pedal = e.target.value / 100;
+  else return;
+  state.auto = false;              // the user has taken over
 });
 mechEl.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
   const k = b.dataset.mech, c = engine.ctl;
-  if (b.dataset.gear) c.gear = b.dataset.gear;
+  if (b.dataset.gear) { c.gear = b.dataset.gear; state.auto = false; }
   else if (k === 'shell') setShell();
   else if (k === 'assembled') { state.spread = state.spread < 0.02 ? 1 : 0; syncSlider(); updateContext(); viewGroup(activeView()); }
-  else if (k === 'sweep') { state.sweep = !state.sweep; sweepT = (Math.acos(2 * c.vnt - 1) * 5) / TAU; }
+  else if (k === 'auto') { state.auto = !state.auto; startAuto(); }
   else if (k === 'press') {
+    state.auto = false;
     c.pedal = c.pedal > 0.5 ? 0 : 1;
     const s = $('[data-mech="pedal"]', mechEl);
     if (s) s.value = c.pedal * 100;
@@ -905,11 +927,52 @@ mechEl.addEventListener('click', (e) => {
 // ───────────────────────── toolbar ─────────────────────────
 const toolbar = $('#toolbar');
 const explodeInput = $('#explode'), rpmInput = $('#rpm'), rpmVal = $('#rpmVal'), hud = $('#hud');
+// "Watch it work": one click opens an assembly put together, takes away what hides the mechanism, starts the engine
+// and lets the mechanism run on its own (state.auto). c / r / dir = what the camera frames. Clicking it again goes back.
+const DEMOS = {
+  turbo: { c: [-18, 195, -185], r: 80, dir: [0.9, 0.3, -0.3] },             // guide vane ring, seen from the turbine outlet
+  clutch: { c: [285, 0, 0], r: 200, dir: [0.25, 0.22, 0.94], cut: true },    // sectioned along the shaft
+  gearbox: { c: [475, 25, -55], r: 245, dir: [0.22, 0.5, 0.84] },           // shafts, gears and collars without the housing
+};
+function syncDemo() {
+  for (const b of toolbar.querySelectorAll('[data-demo]')) {
+    const on = b.dataset.demo === state.demo;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on);
+  }
+}
+function endDemo() {
+  if (!state.demo) return;
+  if (state.demoCut) { state.cut = false; $('[data-tg="cut"]', toolbar).classList.remove('on'); }
+  state.demo = null; state.demoCut = false; state.auto = false;
+  engine.ctl.pedal = 0;
+  hud.hidden = !state.running;
+  syncDemo();
+}
+function startDemo(name) {
+  if (state.demo === name) return showAll();
+  const d = DEMOS[name];
+  if (!state.isolate) setToggle('isolate', true);
+  setToggle(name, true);            // opens the view and ends any other demonstration
+  state.demo = name;
+  state.spread = 0;                 // assembled
+  state.shell = name === 'clutch';  // the clutch keeps its cover: it is cut open instead
+  if (d.cut && !state.cut) { state.cut = true; state.demoCut = true; $('[data-tg="cut"]', toolbar).classList.add('on'); }
+  state.auto = true;
+  startAuto();
+  if (!state.running) setRunning(true);
+  hud.hidden = true;
+  syncSlider(); syncDemo(); refresh(); updateDimBox();
+  const c = new THREE.Vector3(...d.c);
+  flyTo(c, c.clone().addScaledVector(new THREE.Vector3(...d.dir).normalize(), fitDistance(d.r) * 1.1), 1100);
+  if (ui.phone) setSheet(null);     // show the model, not the sheet the button was in
+}
 function setToggle(name, value) {
+  if (name in VIEWS) endDemo();
   state[name] = value ?? !state[name];
   if (name in VIEWS && state[name]) {
     for (const v in VIEWS) if (v !== name && state[v]) { state[v] = false; $(`[data-tg="${v}"]`, toolbar).classList.remove('on'); }
-    state.spread = 1; state.shell = true; state.system = null; state.selected = null;   // a newly opened assembly starts complete and apart
+    state.spread = 1; state.shell = true; state.auto = false; state.system = null; state.selected = null;   // a newly opened assembly starts complete and apart
     renderSystems(); renderPanel();
   }
   if (name in VIEWS) syncSlider();
@@ -928,7 +991,7 @@ function setRunning(v) {
   state.running = v ?? !state.running;
   $('.run', toolbar).classList.toggle('on', state.running);
   $('.run span', toolbar).textContent = state.running ? 'Stop' : 'Run';
-  hud.hidden = !state.running;
+  hud.hidden = !state.running || !!state.demo;      // a demonstration needs the room, and the strokes are not its subject
   engine.update(theta, state.running);
   if (ui.phone) { syncNav(); syncFree(); }      // the HUD takes room above the navigation
 }
@@ -937,6 +1000,7 @@ toolbar.addEventListener('click', (e) => {
   if (!b && ui.phone && e.target === toolbar && e.clientY - toolbar.getBoundingClientRect().top < 30) return setSheet(null);   // phone: the sheet's grab handle
   if (!b) return;
   if (b.dataset.tg) return setToggle(b.dataset.tg);
+  if (b.dataset.demo) return startDemo(b.dataset.demo);
   const a = b.dataset.act;
   if (a === 'left') orbitBy(-Math.PI / 6);
   else if (a === 'right') orbitBy(Math.PI / 6);
@@ -993,12 +1057,7 @@ function frame(now) {
   if (state.running) {
     theta += dt * (state.rpm / 60) * TAU;
   }
-  if (state.sweep && mechView === 'turbo') {
-    sweepT += dt;
-    engine.ctl.vnt = 0.5 + 0.5 * Math.cos((sweepT * TAU) / 5);
-    const s = $('[data-mech="vnt"]', mechEl);
-    if (s) s.value = Math.round(engine.ctl.vnt * 100);
-  }
+  runAuto(dt);
   engine.tick(dt);                 // guide vanes, clutch and gear change move towards what is asked for
   if (state.running) {
     engine.update(theta, true);

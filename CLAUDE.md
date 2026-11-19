@@ -72,6 +72,8 @@ Pushing to `main` runs the checks and deploys to GitHub Pages (`.github/workflow
   angles from `drive.rIn` and `drive.v`, both ratios to engine speed. `GEARS` in `engine-gearbox.js` holds teeth, synchroniser and collar direction per gear.
 - Anything that must move inside a part or a loose piece goes in its own inner `Group` (the part and piece groups are
   repositioned by `setExplode`). The diaphragm spring is one unmerged mesh whose vertices `anim.clutch` moves.
+- `DEMOS` / `startDemo` in `main.js` are the "Watch it work" toolbar buttons: one click opens the view assembled, hides the
+  shell (the clutch is cut open instead), starts the engine and sets `state.auto`, which works the mechanism until the user touches a control.
 - The control strip is `#mech` in `index.html`, filled by `MECH` / `renderMech` / `syncMech` in `main.js`, shown only in the
   turbo, clutch and gearbox views. `VIEWS[view].shell` lists the parts its housing button hides (`state.shell`, key H).
 - Travel figures, vane angles and the position of the vane crank are estimates (≈); the tooth counts are from the catalogue.

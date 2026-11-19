@@ -245,6 +245,12 @@ input[type='range']::-moz-range-thumb { width: 13px; height: 13px; border-radius
 }
 #toolbar .views .tg { color: #cfd6de; }
 #toolbar .views .tg.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+#toolbar .grp.demos { border-color: rgba(255, 178, 36, 0.5); }
+#toolbar .grp.demos[data-cap]::before { color: var(--accent); }
+#toolbar .demos .tg { color: #e6ebf0; }
+#toolbar .demos .tg:not(.on) svg { color: var(--accent); }
+#toolbar .demos .tg.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+#toolbar .demos svg { width: 12px; height: 12px; fill: currentColor; stroke: none; }
 
 /* ═════════ phone layout ═════════
    Everything below is scoped to html.phone, a class main.js sets from matchMedia
@@ -440,6 +446,9 @@ html.phone #toolbar .grp { display: none; padding: 0; gap: 8px; background: none
 html.phone[data-sheet='apart'] #toolbar .grp.views, html.phone[data-sheet='apart'] #toolbar .grp[data-cap='Pull apart'],
 html.phone[data-sheet='view'] #toolbar .grp[data-cap='View'], html.phone[data-sheet='view'] #toolbar .grp[data-cap='Show'],
 html.phone[data-sheet='run'] #toolbar .grp[data-cap='Engine'] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.phone[data-sheet='run'] #toolbar .grp.demos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.phone #toolbar .demos svg { display: none; }
+html.phone #toolbar .demos .tg.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 html.phone #toolbar .grp.views { order: -1; }
 html.phone #toolbar .grp[data-cap]::before {
   display: block; position: static; grid-column: 1 / -1; font: 13px var(--mono); letter-spacing: 0.06em; color: var(--muted);

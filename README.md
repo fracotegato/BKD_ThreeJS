@@ -11,7 +11,7 @@ Three.js visualization of the VW 2.0 TDI **BKD** engine as fitted to the Golf V:
 - Take one assembly apart at a time: crankcase, cylinder block, cylinder head, unit injectors, turbocharger, gearbox, clutch.
 - Explode the whole engine, cut it open along the crankshaft, or make the housings transparent.
 - Run the four-stroke cycle in slow motion.
-- Work the mechanisms: with the turbocharger, clutch or gearbox open, a control strip moves the guide vanes, presses the clutch pedal or changes gear (R, N, 1 – 6). Its two buttons take the housing away and put the assembly back together, so the parts can be watched at work.
+- Watch the mechanisms work: the three **Watch it work** buttons show the turbocharger guide vanes, the clutch (cut open) or the gearbox without its housing, assembled and moving on their own. A control strip then lets you take over: move the vanes, press the pedal, or pick a gear (R, N, 1 – 6). The same strip appears when one of those assemblies is taken apart.
 
 | Key | Action | Key | Action |
 | --- | --- | --- | --- |
